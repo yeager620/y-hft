@@ -1,0 +1,7 @@
+/scripts/
+/zigexchange-main/.idea/
+/zigexchange-main/
+
+.DS_Store
+.idea/
+/exchange-rs/target/

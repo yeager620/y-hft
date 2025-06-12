@@ -1,0 +1,23 @@
+[package]
+name = "exchange-rs"
+version = "0.1.0"
+edition = "2021"
+description = "A high-performance limit order book implementation in Rust"
+authors = ["Exchange Team"]
+
+[dependencies]
+crossbeam = "0.8"
+crossbeam-utils = "0.8"
+chrono = "0.4"
+dashmap = "5.4"
+parking_lot = "0.12"
+rayon = "1.7"
+thiserror = "1.0"
+num_cpus = "1.15"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "benchmark"
+harness = false
