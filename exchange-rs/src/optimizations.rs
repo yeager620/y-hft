@@ -2,14 +2,15 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use crossbeam_utils::CachePadded;
 use crossbeam::queue::ArrayQueue;
+use crossbeam_utils::CachePadded;
 use parking_lot::{Mutex, RwLock};
 use rayon::ThreadPoolBuilder;
 
-use crate::order::Order;
 use crate::matching_engine::MatchingEngine;
+use crate::order::Order;
 
+#[allow(dead_code)]
 const CACHE_LINE_SIZE: usize = 64;
 
 pub struct OrderPool {
@@ -70,8 +71,11 @@ impl OrderPool {
 
     pub fn release(&self, order: Arc<RwLock<Order>>) {
         let mut guard = self.free_list.lock();
+        let mut total = self.total_allocated.lock();
+        if *total > 0 {
+            *total -= 1;
+        }
         guard.push(order);
-        *self.total_allocated.lock() -= 1;
     }
 
     pub fn get_total_allocated(&self) -> usize {
@@ -137,7 +141,7 @@ impl CacheAlignedPriceLevel {
             let order_ref = order.read();
             remaining_qty = order_ref.remaining_quantity();
             visible_qty = order_ref.visible_quantity();
-        } 
+        }
 
         *self.total_volume -= remaining_qty as u64;
         *self.visible_volume -= visible_qty as u64;
@@ -151,6 +155,10 @@ impl CacheAlignedPriceLevel {
 
     pub fn get_visible_volume(&self) -> u64 {
         *self.visible_volume
+    }
+
+    pub fn get_price(&self) -> u64 {
+        *self.price
     }
 }
 
@@ -194,7 +202,11 @@ impl OrderProcessorPool {
         }
     }
 
-    fn worker_fn(queue: Arc<SPSCQueue>, stop: Arc<std::sync::atomic::AtomicBool>, engine: Arc<Mutex<MatchingEngine>>) {
+    fn worker_fn(
+        queue: Arc<SPSCQueue>,
+        stop: Arc<std::sync::atomic::AtomicBool>,
+        engine: Arc<Mutex<MatchingEngine>>,
+    ) {
         while !stop.load(std::sync::atomic::Ordering::Relaxed) {
             if let Some(order) = queue.dequeue() {
                 let mut engine = engine.lock();
@@ -208,7 +220,10 @@ impl OrderProcessorPool {
     }
 
     pub fn submit_order(&self, order: Order) -> Result<(), &'static str> {
-        let worker_idx = self.next_worker.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % self.workers.len();
+        let worker_idx = self
+            .next_worker
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            % self.workers.len();
 
         self.workers[worker_idx].queue.enqueue(order)
     }
@@ -217,7 +232,9 @@ impl OrderProcessorPool {
 impl Drop for OrderProcessorPool {
     fn drop(&mut self) {
         for worker in &self.workers {
-            worker.stop.store(true, std::sync::atomic::Ordering::Relaxed);
+            worker
+                .stop
+                .store(true, std::sync::atomic::Ordering::Relaxed);
         }
 
         for worker in &mut self.workers {
@@ -234,9 +251,7 @@ pub struct ThreadPool {
 
 impl ThreadPool {
     pub fn new(num_threads: usize) -> Result<Self, rayon::ThreadPoolBuildError> {
-        let pool = ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()?;
+        let pool = ThreadPoolBuilder::new().num_threads(num_threads).build()?;
 
         Ok(Self { pool })
     }
@@ -252,8 +267,8 @@ impl ThreadPool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::order::{Order, Side, OrderType};
     use crate::matching_engine::MatchingEngine;
+    use crate::order::{Order, OrderType, Side};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
     use std::thread;
@@ -261,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_order_pool() {
-        let mut pool = OrderPool::new(10);
+        let pool = OrderPool::new(10);
 
         let mut orders = Vec::new();
         for i in 0..15 {
@@ -348,7 +363,10 @@ mod tests {
             handle.join().unwrap();
         }
 
-        assert_eq!(total_orders.load(Ordering::SeqCst), num_threads * orders_per_thread);
+        assert_eq!(
+            total_orders.load(Ordering::SeqCst),
+            num_threads * orders_per_thread
+        );
     }
 
     #[test]
@@ -356,14 +374,7 @@ mod tests {
         let queue = SPSCQueue::new(10);
 
         for i in 0..5 {
-            let order = Order::new(
-                "AAPL".to_string(),
-                Side::Buy,
-                OrderType::Limit,
-                100,
-                10,
-                1,
-            );
+            let order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
             queue.enqueue(order).unwrap();
         }
 
@@ -380,25 +391,11 @@ mod tests {
         let queue = SPSCQueue::new(2);
 
         for i in 0..2 {
-            let order = Order::new(
-                "AAPL".to_string(),
-                Side::Buy,
-                OrderType::Limit,
-                100,
-                10,
-                i,
-            );
+            let order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, i);
             queue.enqueue(order).unwrap();
         }
 
-        let order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            3,
-        );
+        let order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 3);
         let result = queue.enqueue(order);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Queue is full");
@@ -412,14 +409,7 @@ mod tests {
         let queue_clone = Arc::clone(&queue);
         let producer = thread::spawn(move || {
             for i in 0..num_orders {
-                let order = Order::new(
-                    "AAPL".to_string(),
-                    Side::Buy,
-                    OrderType::Limit,
-                    100,
-                    10,
-                    i,
-                );
+                let order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, i);
                 queue_clone.enqueue(order).unwrap();
             }
         });
@@ -447,14 +437,7 @@ mod tests {
     fn test_cache_aligned_price_level() {
         let mut level = CacheAlignedPriceLevel::new(100);
 
-        let mut order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         order.id = 1;
 
         let order_arc = Arc::new(RwLock::new(order));
@@ -478,14 +461,8 @@ mod tests {
         for t in 0..num_threads {
             for i in 0..orders_per_thread {
                 let id = (t * orders_per_thread + i) as u64;
-                let mut order = Order::new(
-                    "AAPL".to_string(),
-                    Side::Buy,
-                    OrderType::Limit,
-                    100,
-                    10,
-                    id,
-                );
+                let mut order =
+                    Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, id);
                 order.id = id;
 
                 let order_arc = Arc::new(RwLock::new(order));
@@ -493,7 +470,10 @@ mod tests {
             }
         }
 
-        assert_eq!(level.get_total_volume(), (num_threads * orders_per_thread * 10) as u64);
+        assert_eq!(
+            level.get_total_volume(),
+            (num_threads * orders_per_thread * 10) as u64
+        );
     }
 
     #[test]
@@ -507,26 +487,12 @@ mod tests {
 
         let pool = OrderProcessorPool::new(2, Arc::clone(&engine));
 
-        let sell_order = Order::new(
-            "AAPL".to_string(),
-            Side::Sell,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let sell_order = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 100, 10, 1);
         pool.submit_order(sell_order).unwrap();
 
         thread::sleep(Duration::from_millis(50));
 
-        let buy_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            5,
-            2,
-        );
+        let buy_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 5, 2);
         pool.submit_order(buy_order).unwrap();
 
         thread::sleep(Duration::from_millis(50));
@@ -549,7 +515,6 @@ mod tests {
         }
 
         let pool = OrderProcessorPool::new(4, Arc::clone(&engine));
-
         let processed = Arc::new(AtomicUsize::new(0));
 
         for i in 0..10 {
@@ -563,17 +528,29 @@ mod tests {
                 i,
             );
             pool.submit_order(sell_order).unwrap();
-            let processed_clone = Arc::clone(&processed);
-            thread::spawn(move || {
-                processed_clone.fetch_add(1, Ordering::SeqCst);
-            });
         }
 
-        while processed.load(Ordering::SeqCst) < 10 {
-            thread::sleep(Duration::from_millis(1));
+        let mut all_orders_processed = false;
+        for _ in 0..100 {
+            let engine_ref = engine.lock();
+            let order_book = engine_ref.order_books.get("AAPL").unwrap();
+            let mut found_orders = 0;
+
+            for i in 0..10 {
+                if order_book.get_order(i).is_some() {
+                    found_orders += 1;
+                }
+            }
+
+            if found_orders == 10 {
+                all_orders_processed = true;
+                break;
+            }
+            drop(engine_ref);
+            thread::sleep(Duration::from_millis(10));
         }
 
-        processed.store(0, Ordering::SeqCst);
+        assert!(all_orders_processed, "Not all sell orders were processed");
 
         for i in 0..10 {
             let price = 100 + i;
@@ -586,15 +563,31 @@ mod tests {
                 i + 100,
             );
             pool.submit_order(buy_order).unwrap();
-            let processed_clone = Arc::clone(&processed);
-            thread::spawn(move || {
-                processed_clone.fetch_add(1, Ordering::SeqCst);
-            });
         }
 
-        while processed.load(Ordering::SeqCst) < 10 {
-            thread::sleep(Duration::from_millis(1));
+        let mut all_trades_processed = false;
+        for _ in 0..100 {
+            let engine_ref = engine.lock();
+            let order_book = engine_ref.order_books.get("AAPL").unwrap();
+            let mut completed_trades = 0;
+
+            for i in 0..10 {
+                if let Some(order) = order_book.get_order(i) {
+                    if order.read().filled_quantity == 5 {
+                        completed_trades += 1;
+                    }
+                }
+            }
+
+            if completed_trades == 10 {
+                all_trades_processed = true;
+                break;
+            }
+            drop(engine_ref);
+            thread::sleep(Duration::from_millis(10));
         }
+
+        assert!(all_trades_processed, "Not all trades were processed");
 
         let engine_ref = engine.lock();
         let order_book = engine_ref.order_books.get("AAPL").unwrap();

@@ -1,30 +1,31 @@
+use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Side {
     Buy,
     Sell,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum OrderType {
     Limit,
     Market,
     StopLimit,
     StopMarket,
-    Iceberg, 
+    Iceberg,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TimeInForce {
-    GTC, 
-    IOC, 
-    FOK, 
-    GTD, 
-    Day, 
+    GTC,
+    IOC,
+    FOK,
+    GTD,
+    Day,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum OrderStatus {
     New,
     PartiallyFilled,
@@ -40,16 +41,16 @@ pub struct Order {
     pub symbol: String,
     pub side: Side,
     pub order_type: OrderType,
-    pub price: u64, 
+    pub price: u64,
     pub quantity: u32,
     pub filled_quantity: u32,
     pub status: OrderStatus,
-    pub timestamp: i64, 
+    pub timestamp: i64,
     pub user_id: u64,
     pub time_in_force: TimeInForce,
-    pub expiration_time: i64, 
-    pub stop_price: Option<u64>, 
-    pub display_quantity: Option<u32>, 
+    pub expiration_time: i64,
+    pub stop_price: Option<u64>,
+    pub display_quantity: Option<u32>,
 }
 
 impl Order {
@@ -62,7 +63,7 @@ impl Order {
         user_id: u64,
     ) -> Self {
         Self {
-            id: 0, 
+            id: 0,
             symbol,
             side,
             order_type,
@@ -117,7 +118,7 @@ impl Order {
                 let ns_per_day = 86_400_000_000_000i64;
                 let current_day = current_time / ns_per_day;
                 let order_day = self.timestamp / ns_per_day;
-                
+
                 current_day > order_day
             }
             _ => false,
@@ -130,7 +131,7 @@ impl Order {
                 let nanos = duration.as_nanos() as i64;
                 (nanos / 1_000_000) * 1_000_000
             }
-            Err(_) => 0, 
+            Err(_) => 0,
         }
     }
 }
@@ -143,14 +144,7 @@ mod tests {
 
     #[test]
     fn test_remaining_quantity() {
-        let mut order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert_eq!(order.remaining_quantity(), 10);
 
         order.filled_quantity = 5;
@@ -162,14 +156,7 @@ mod tests {
 
     #[test]
     fn test_visible_quantity() {
-        let mut order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert_eq!(order.visible_quantity(), 10);
 
         let mut iceberg_order = Order::new(
@@ -189,14 +176,7 @@ mod tests {
 
     #[test]
     fn test_is_filled() {
-        let mut order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert!(!order.is_filled());
 
         order.filled_quantity = 5;
@@ -208,14 +188,7 @@ mod tests {
 
     #[test]
     fn test_is_stop_order() {
-        let limit_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let limit_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert!(!limit_order.is_stop_order());
 
         let stop_limit_order = Order::new(
@@ -274,14 +247,7 @@ mod tests {
 
     #[test]
     fn test_is_expired() {
-        let mut gtd_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut gtd_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         gtd_order.time_in_force = TimeInForce::GTD;
 
         let current_time = Order::get_nano_timestamp();
@@ -293,14 +259,7 @@ mod tests {
         gtd_order.expiration_time = current_time - 1;
         assert!(gtd_order.is_expired(current_time));
 
-        let mut day_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut day_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         day_order.time_in_force = TimeInForce::Day;
 
         let current_time = Order::get_nano_timestamp();
@@ -310,16 +269,9 @@ mod tests {
 
         assert!(day_order.is_expired(current_time + one_day_ns));
 
-        let gtc_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let gtc_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert!(!gtc_order.is_expired(current_time));
-        assert!(!gtc_order.is_expired(current_time + one_day_ns * 365)); 
+        assert!(!gtc_order.is_expired(current_time + one_day_ns * 365));
     }
 
     #[test]
@@ -334,24 +286,10 @@ mod tests {
 
     #[test]
     fn test_order_types() {
-        let market_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Market,
-            0, 
-            10,
-            1,
-        );
+        let market_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Market, 0, 10, 1);
         assert_eq!(market_order.order_type, OrderType::Market);
 
-        let limit_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let limit_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert_eq!(limit_order.order_type, OrderType::Limit);
 
         let mut stop_limit_order = Order::new(
@@ -371,7 +309,7 @@ mod tests {
             "AAPL".to_string(),
             Side::Buy,
             OrderType::StopMarket,
-            0, 
+            0,
             10,
             1,
         );
@@ -396,59 +334,24 @@ mod tests {
 
     #[test]
     fn test_time_in_force() {
-        let gtc_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let gtc_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         assert_eq!(gtc_order.time_in_force, TimeInForce::GTC);
 
-        let mut ioc_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut ioc_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         ioc_order.time_in_force = TimeInForce::IOC;
         assert_eq!(ioc_order.time_in_force, TimeInForce::IOC);
 
-        let mut fok_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut fok_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         fok_order.time_in_force = TimeInForce::FOK;
         assert_eq!(fok_order.time_in_force, TimeInForce::FOK);
 
-        let mut gtd_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut gtd_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         gtd_order.time_in_force = TimeInForce::GTD;
-        gtd_order.expiration_time = Order::get_nano_timestamp() + 86_400_000_000_000; 
+        gtd_order.expiration_time = Order::get_nano_timestamp() + 86_400_000_000_000;
         assert_eq!(gtd_order.time_in_force, TimeInForce::GTD);
         assert!(gtd_order.expiration_time > Order::get_nano_timestamp());
 
-        let mut day_order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            1,
-        );
+        let mut day_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
         day_order.time_in_force = TimeInForce::Day;
         assert_eq!(day_order.time_in_force, TimeInForce::Day);
     }

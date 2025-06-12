@@ -1,16 +1,9 @@
-use exchange_rs::order::{Order, Side, OrderType, TimeInForce, OrderStatus};
+use exchange_rs::order::{Order, OrderStatus, OrderType, Side, TimeInForce};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[test]
 fn test_order_creation() {
-    let order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
 
     assert_eq!(order.symbol, "AAPL");
     assert_eq!(order.side, Side::Buy);
@@ -40,14 +33,7 @@ fn test_iceberg_order_visibility() {
 
 #[test]
 fn test_order_expiration() {
-    let mut order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let mut order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
     order.time_in_force = TimeInForce::GTD;
 
     let current_time = SystemTime::now()

@@ -4,34 +4,19 @@ use exchange_rs::{
 };
 
 mod test_utils;
-use test_utils::setup;
 
 #[test]
 fn test_limit_order_operations() {
     let mut engine = MatchingEngine::new();
     engine.add_symbol("AAPL");
 
-    let sell_order = Order::new(
-        "AAPL".to_string(),
-        Side::Sell,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let sell_order = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 100, 10, 1);
 
     let result = engine.place_order(sell_order).unwrap();
     assert_eq!(result.trades.len(), 0);
     assert!(result.remaining_order.is_some());
 
-    let buy_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        5,
-        2,
-    );
+    let buy_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 5, 2);
 
     let result = engine.place_order(buy_order).unwrap();
     assert_eq!(result.trades.len(), 1);
@@ -44,26 +29,12 @@ fn test_market_orders() {
     let mut engine = MatchingEngine::new();
     engine.add_symbol("AAPL");
 
-    let sell_order = Order::new(
-        "AAPL".to_string(),
-        Side::Sell,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let sell_order = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 100, 10, 1);
 
     let result = engine.place_order(sell_order).unwrap();
     assert_eq!(result.trades.len(), 0);
 
-    let market_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Market,
-        0,
-        5,
-        2,
-    );
+    let market_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Market, 0, 5, 2);
 
     let result = engine.place_order(market_order).unwrap();
     assert_eq!(result.trades.len(), 1);
@@ -76,25 +47,11 @@ fn test_ioc_orders() {
     let mut engine = MatchingEngine::new();
     engine.add_symbol("AAPL");
 
-    let sell_order = Order::new(
-        "AAPL".to_string(),
-        Side::Sell,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let sell_order = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 100, 10, 1);
 
     engine.place_order(sell_order).unwrap();
 
-    let mut ioc_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        15,
-        2,
-    );
+    let mut ioc_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 15, 2);
     ioc_order.time_in_force = TimeInForce::IOC;
 
     let result = engine.place_order(ioc_order).unwrap();
@@ -108,14 +65,7 @@ fn test_fok_orders() {
     let mut engine = MatchingEngine::new();
     engine.add_symbol("AAPL");
 
-    let mut fok_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let mut fok_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
     fok_order.time_in_force = TimeInForce::FOK;
 
     let result = engine.place_order(fok_order);
@@ -146,14 +96,7 @@ fn test_iceberg_orders() {
         assert_eq!(level.visible_volume, 10);
     }
 
-    let buy_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        5,
-        2,
-    );
+    let buy_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 5, 2);
 
     engine.place_order(buy_order).unwrap();
 

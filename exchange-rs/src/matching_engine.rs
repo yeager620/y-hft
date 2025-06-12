@@ -3,10 +3,13 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use parking_lot::RwLock;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::metrics::{LatencyMetrics, LatencyMetricsSnapshot, OrderMetrics, OrderMetricsSnapshot};
 use crate::order::{Order, OrderStatus, OrderType, Side, TimeInForce};
 use crate::orderbook::OrderBook;
+use crate::snapshot::OrderBookSnapshot;
 
 #[derive(Debug, Clone)]
 pub struct Trade {
@@ -58,10 +61,19 @@ impl TradeExecutionResult {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct MatchingEngineSnapshot {
+    order_books: HashMap<String, OrderBookSnapshot>,
+    next_order_id: u64,
+    next_trade_id: u64,
+}
+
 pub struct MatchingEngine {
     pub order_books: HashMap<String, OrderBook>,
     next_order_id: u64,
     next_trade_id: u64,
+    order_metrics: OrderMetrics,
+    latency_metrics: LatencyMetrics,
 }
 
 impl MatchingEngine {
@@ -70,16 +82,25 @@ impl MatchingEngine {
             order_books: HashMap::new(),
             next_order_id: 1,
             next_trade_id: 1,
+            order_metrics: OrderMetrics::new(),
+            latency_metrics: LatencyMetrics::new(),
         }
     }
 
     pub fn add_symbol(&mut self, symbol: &str) {
         if !self.order_books.contains_key(symbol) {
-            self.order_books.insert(symbol.to_string(), OrderBook::new(symbol));
+            self.order_books
+                .insert(symbol.to_string(), OrderBook::new(symbol));
         }
     }
 
-    pub fn place_order(&mut self, mut new_order: Order) -> Result<TradeExecutionResult, MatchingError> {
+    pub fn place_order(
+        &mut self,
+        mut new_order: Order,
+    ) -> Result<TradeExecutionResult, MatchingError> {
+        let start_time = SystemTime::now();
+        self.order_metrics.record_order_received();
+
         let mut result = TradeExecutionResult::new();
 
         if !self.order_books.contains_key(&new_order.symbol) {
@@ -104,7 +125,7 @@ impl MatchingEngine {
                             result.rejected = true;
                             return Err(MatchingError::NoLiquidity);
                         }
-                    },
+                    }
                     Side::Sell => {
                         if let Some(price) = order_book.get_best_bid_price() {
                             order_ref.price = price;
@@ -112,7 +133,7 @@ impl MatchingEngine {
                             result.rejected = true;
                             return Err(MatchingError::NoLiquidity);
                         }
-                    },
+                    }
                 }
             }
         }
@@ -136,7 +157,12 @@ impl MatchingEngine {
                 }
             }
 
-            MatchingEngine::match_order(&mut self.next_trade_id, order_book, Arc::clone(&order), &mut result)?;
+            MatchingEngine::match_order(
+                &mut self.next_trade_id,
+                order_book,
+                Arc::clone(&order),
+                &mut result,
+            )?;
 
             {
                 let mut order_ref = order.write();
@@ -172,14 +198,24 @@ impl MatchingEngine {
                     }
                 }
 
-                MatchingEngine::match_order(&mut self.next_trade_id, order_book, Arc::clone(&order), &mut result)?;
+                MatchingEngine::match_order(
+                    &mut self.next_trade_id,
+                    order_book,
+                    Arc::clone(&order),
+                    &mut result,
+                )?;
             } else {
                 order_book.add_stop_order(Arc::clone(&order))?;
                 result.remaining_order = Some(Arc::clone(&order));
                 return Ok(result);
             }
         } else {
-            MatchingEngine::match_order(&mut self.next_trade_id, order_book, Arc::clone(&order), &mut result)?;
+            MatchingEngine::match_order(
+                &mut self.next_trade_id,
+                order_book,
+                Arc::clone(&order),
+                &mut result,
+            )?;
         }
 
         let order_ref = order.read();
@@ -189,7 +225,9 @@ impl MatchingEngine {
             if !already_added {
                 result.filled_orders.push(Arc::clone(&order));
             }
-        } else if order_ref.order_type == OrderType::Limit || order_ref.order_type == OrderType::Iceberg {
+        } else if order_ref.order_type == OrderType::Limit
+            || order_ref.order_type == OrderType::Iceberg
+        {
             drop(order_ref);
             order_book.add_order(Arc::clone(&order))?;
             result.remaining_order = Some(Arc::clone(&order));
@@ -204,10 +242,16 @@ impl MatchingEngine {
             return Err(MatchingError::NoLiquidity);
         }
 
+        let elapsed = start_time.elapsed().unwrap();
+        self.latency_metrics.record_order_processing_time(elapsed);
+
         Ok(result)
     }
 
-    fn can_fill_order(order_book: &OrderBook, order: &Arc<RwLock<Order>>) -> Result<bool, MatchingError> {
+    fn can_fill_order(
+        order_book: &OrderBook,
+        order: &Arc<RwLock<Order>>,
+    ) -> Result<bool, MatchingError> {
         let order_ref = order.read();
         let remaining_qty = order_ref.quantity;
         let side = order_ref.side;
@@ -222,9 +266,9 @@ impl MatchingEngine {
         let mut prices: Vec<u64> = opposite_levels.keys().cloned().collect();
 
         if side == Side::Buy {
-            prices.sort_unstable(); 
+            prices.sort_unstable();
         } else {
-            prices.sort_unstable_by(|a, b| b.cmp(a)); 
+            prices.sort_unstable_by(|a, b| b.cmp(a));
         }
 
         let mut available_qty = 0;
@@ -245,15 +289,20 @@ impl MatchingEngine {
                 }
 
                 if available_qty >= remaining_qty {
-                    return Ok(true); 
+                    return Ok(true);
                 }
             }
         }
 
-        Ok(false) 
+        Ok(false)
     }
 
-    fn match_order(next_trade_id: &mut u64, order_book: &mut OrderBook, incoming_order: Arc<RwLock<Order>>, result: &mut TradeExecutionResult) -> Result<(), MatchingError> {
+    fn match_order(
+        next_trade_id: &mut u64,
+        order_book: &mut OrderBook,
+        incoming_order: Arc<RwLock<Order>>,
+        result: &mut TradeExecutionResult,
+    ) -> Result<(), MatchingError> {
         let mut continue_matching = true;
 
         while continue_matching {
@@ -299,7 +348,7 @@ impl MatchingEngine {
 
                     let trade_qty = std::cmp::min(
                         incoming_order.read().remaining_quantity(),
-                        resting_order.read().visible_quantity()
+                        resting_order.read().visible_quantity(),
                     );
 
                     if trade_qty > 0 {
@@ -309,7 +358,7 @@ impl MatchingEngine {
                             Arc::clone(&resting_order),
                             trade_qty,
                             best_price,
-                            result
+                            result,
                         )?;
 
                         if resting_order.read().is_filled() {
@@ -343,7 +392,6 @@ impl MatchingEngine {
             order_book.update_last_trade_price(last_trade.price)?;
         }
 
-
         Ok(())
     }
 
@@ -353,12 +401,20 @@ impl MatchingEngine {
         sell_order: Arc<RwLock<Order>>,
         quantity: u32,
         price: u64,
-        result: &mut TradeExecutionResult
+        result: &mut TradeExecutionResult,
     ) -> Result<(), MatchingError> {
         let trade = Trade {
             id: *next_trade_id,
-            buy_order_id: if buy_order.read().side == Side::Buy { buy_order.read().id } else { sell_order.read().id },
-            sell_order_id: if buy_order.read().side == Side::Buy { sell_order.read().id } else { buy_order.read().id },
+            buy_order_id: if buy_order.read().side == Side::Buy {
+                buy_order.read().id
+            } else {
+                sell_order.read().id
+            },
+            sell_order_id: if buy_order.read().side == Side::Buy {
+                sell_order.read().id
+            } else {
+                buy_order.read().id
+            },
             price,
             quantity,
             timestamp: get_nano_timestamp(),
@@ -416,10 +472,19 @@ impl MatchingEngine {
         Ok(expired_orders)
     }
 
-    fn process_ioc_order(&mut self, order: Arc<RwLock<Order>>) -> Result<TradeExecutionResult, MatchingError> {
+    #[allow(dead_code)]
+    fn process_ioc_order(
+        &mut self,
+        order: Arc<RwLock<Order>>,
+    ) -> Result<TradeExecutionResult, MatchingError> {
         let mut result = TradeExecutionResult::new();
         let order_book = self.order_books.get_mut(&order.read().symbol).unwrap();
-        MatchingEngine::match_order(&mut self.next_trade_id, order_book, Arc::clone(&order), &mut result)?;
+        MatchingEngine::match_order(
+            &mut self.next_trade_id,
+            order_book,
+            Arc::clone(&order),
+            &mut result,
+        )?;
 
         {
             let mut order_ref = order.write();
@@ -429,11 +494,16 @@ impl MatchingEngine {
         }
 
         result.filled_orders.push(Arc::clone(&order));
-        result.remaining_order = None; 
+        result.remaining_order = None;
         Ok(result)
     }
 
-    fn process_stop_market_order(&mut self, order: Arc<RwLock<Order>>, trigger_price: u64) -> Result<TradeExecutionResult, MatchingError> {
+    #[allow(dead_code)]
+    fn process_stop_market_order(
+        &mut self,
+        order: Arc<RwLock<Order>>,
+        trigger_price: u64,
+    ) -> Result<TradeExecutionResult, MatchingError> {
         let mut result = TradeExecutionResult::new();
         let order_book = self.order_books.get_mut(&order.read().symbol).unwrap();
 
@@ -448,18 +518,23 @@ impl MatchingEngine {
                     } else {
                         return Err(MatchingError::NoLiquidity);
                     }
-                },
+                }
                 Side::Sell => {
                     if let Some(price) = order_book.get_best_bid_price() {
                         order_ref.price = price;
                     } else {
                         return Err(MatchingError::NoLiquidity);
                     }
-                },
+                }
             }
         }
 
-        MatchingEngine::match_order(&mut self.next_trade_id, order_book, Arc::clone(&order), &mut result)?;
+        MatchingEngine::match_order(
+            &mut self.next_trade_id,
+            order_book,
+            Arc::clone(&order),
+            &mut result,
+        )?;
 
         order_book.update_last_trade_price(trigger_price)?;
 
@@ -468,13 +543,16 @@ impl MatchingEngine {
         Ok(result)
     }
 
-    fn process_triggered_stop_order(&mut self, order: Arc<RwLock<Order>>, trigger_price: u64) -> Result<TradeExecutionResult, MatchingError> {
+    #[allow(dead_code)]
+    fn process_triggered_stop_order(
+        &mut self,
+        order: Arc<RwLock<Order>>,
+        trigger_price: u64,
+    ) -> Result<TradeExecutionResult, MatchingError> {
         let order_type = order.read().order_type;
 
         match order_type {
-            OrderType::StopMarket => {
-                self.process_stop_market_order(order, trigger_price)
-            },
+            OrderType::StopMarket => self.process_stop_market_order(order, trigger_price),
             OrderType::StopLimit => {
                 let mut result = TradeExecutionResult::new();
                 let order_book = self.order_books.get_mut(&order.read().symbol).unwrap();
@@ -484,7 +562,12 @@ impl MatchingEngine {
                     order_ref.order_type = OrderType::Limit;
                 }
 
-                MatchingEngine::match_order(&mut self.next_trade_id, order_book, Arc::clone(&order), &mut result)?;
+                MatchingEngine::match_order(
+                    &mut self.next_trade_id,
+                    order_book,
+                    Arc::clone(&order),
+                    &mut result,
+                )?;
 
                 order_book.update_last_trade_price(trigger_price)?;
 
@@ -496,9 +579,61 @@ impl MatchingEngine {
                 }
 
                 Ok(result)
-            },
-            _ => Err(MatchingError::InternalError("Invalid stop order type".to_string())),
+            }
+            _ => Err(MatchingError::InternalError(
+                "Invalid stop order type".to_string(),
+            )),
         }
+    }
+
+    pub fn get_order_metrics(&self) -> OrderMetricsSnapshot {
+        self.order_metrics.get_metrics()
+    }
+
+    pub fn get_latency_metrics(&self) -> LatencyMetricsSnapshot {
+        self.latency_metrics.get_metrics()
+    }
+
+    pub fn create_snapshot(&self) -> MatchingEngineSnapshot {
+        let mut order_books = HashMap::new();
+
+        for (symbol, book) in &self.order_books {
+            order_books.insert(symbol.clone(), book.create_snapshot());
+        }
+
+        MatchingEngineSnapshot {
+            order_books,
+            next_order_id: self.next_order_id,
+            next_trade_id: self.next_trade_id,
+        }
+    }
+
+    pub fn restore_from_snapshot(snapshot: &MatchingEngineSnapshot) -> Self {
+        let mut engine = Self::new();
+
+        engine.next_order_id = snapshot.next_order_id;
+        engine.next_trade_id = snapshot.next_trade_id;
+
+        for (symbol, book_snapshot) in &snapshot.order_books {
+            engine.order_books.insert(
+                symbol.clone(),
+                OrderBook::restore_from_snapshot(book_snapshot),
+            );
+        }
+
+        engine
+    }
+
+    pub fn save_snapshot_to_file(&self, path: &str) -> std::io::Result<()> {
+        let snapshot = self.create_snapshot();
+        let json = serde_json::to_string_pretty(&snapshot)?;
+        std::fs::write(path, json)
+    }
+
+    pub fn load_snapshot_from_file(path: &str) -> std::io::Result<Self> {
+        let json = std::fs::read_to_string(path)?;
+        let snapshot: MatchingEngineSnapshot = serde_json::from_str(&json)?;
+        Ok(Self::restore_from_snapshot(&snapshot))
     }
 }
 
@@ -508,7 +643,6 @@ fn get_nano_timestamp() -> i64 {
             let nanos = duration.as_nanos() as i64;
             (nanos / 1_000_000) * 1_000_000
         }
-        Err(_) => 0, 
+        Err(_) => 0,
     }
 }
-

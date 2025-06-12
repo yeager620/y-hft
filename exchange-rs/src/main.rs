@@ -1,14 +1,18 @@
-mod order;
-mod orderbook;
 mod matching_engine;
 mod optimizations;
+mod order;
+mod orderbook;
 
-use std::sync::Arc;
+mod metrics;
+
+mod snapshot;
+
 use parking_lot::Mutex;
+use std::sync::Arc;
 
-use order::{Order, Side, OrderType, TimeInForce};
 use matching_engine::MatchingEngine;
 use optimizations::{OrderPool, OrderProcessorPool};
+use order::{Order, OrderType, Side};
 
 fn main() {
     println!("Exchange-RS: High-performance limit order book implementation");
@@ -29,14 +33,7 @@ fn main() {
 
     println!("\nSubmitting orders...");
 
-    let sell_order = Order::new(
-        "AAPL".to_string(),
-        Side::Sell,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let sell_order = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 100, 10, 1);
     println!("Submitting sell order: 10 shares of AAPL at $100");
     if let Err(e) = pool.submit_order(sell_order) {
         eprintln!("Error submitting sell order: {}", e);
@@ -44,14 +41,7 @@ fn main() {
 
     std::thread::sleep(std::time::Duration::from_millis(100));
 
-    let buy_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        5,
-        2,
-    );
+    let buy_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 5, 2);
     println!("Submitting buy order: 5 shares of AAPL at $100");
     if let Err(e) = pool.submit_order(buy_order) {
         eprintln!("Error submitting buy order: {}", e);
@@ -63,7 +53,7 @@ fn main() {
         "AAPL".to_string(),
         Side::Buy,
         OrderType::StopLimit,
-        110, 
+        110,
         10,
         3,
     );
@@ -75,14 +65,7 @@ fn main() {
 
     std::thread::sleep(std::time::Duration::from_millis(100));
 
-    let sell_order_2 = Order::new(
-        "AAPL".to_string(),
-        Side::Sell,
-        OrderType::Limit,
-        105,
-        5,
-        4,
-    );
+    let sell_order_2 = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 105, 5, 4);
     println!("Submitting sell order: 5 shares of AAPL at $105 (should trigger stop order)");
     if let Err(e) = pool.submit_order(sell_order_2) {
         eprintln!("Error submitting sell order: {}", e);

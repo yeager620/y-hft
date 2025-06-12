@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use crate::order::{Order, OrderStatus, OrderType, Side};
+use crate::snapshot::OrderBookSnapshot;
+use crate::snapshot::{OrderSnapshot, PriceLevelSnapshot};
 use crossbeam_utils::CachePadded;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-
-use crate::order::{Order, OrderStatus, OrderType, Side, TimeInForce};
 
 pub struct PriceLevel {
     price: u64,
     pub orders: Vec<Arc<RwLock<Order>>>,
     pub total_volume: u64,
-    pub visible_volume: u64, 
+    pub visible_volume: u64,
 }
 
 impl PriceLevel {
@@ -28,7 +29,7 @@ impl PriceLevel {
         let order_ref = order.read();
         self.total_volume += order_ref.remaining_quantity() as u64;
         self.visible_volume += order_ref.visible_quantity() as u64;
-        drop(order_ref); 
+        drop(order_ref);
         self.orders.push(order);
     }
 
@@ -42,7 +43,7 @@ impl PriceLevel {
             let order_ref = order.read();
             remaining_qty = order_ref.remaining_quantity();
             visible_qty = order_ref.visible_quantity();
-        } 
+        }
 
         self.total_volume -= remaining_qty as u64;
         self.visible_volume -= visible_qty as u64;
@@ -55,7 +56,8 @@ impl PriceLevel {
         for order in &self.orders {
             let order_ref = order.read();
             if let Some(display_qty) = order_ref.display_quantity {
-                self.visible_volume += std::cmp::min(display_qty as u64, order_ref.remaining_quantity() as u64);
+                self.visible_volume +=
+                    std::cmp::min(display_qty as u64, order_ref.remaining_quantity() as u64);
             } else {
                 self.visible_volume += order_ref.remaining_quantity() as u64;
             }
@@ -66,18 +68,22 @@ impl PriceLevel {
         self.visible_volume
     }
 
-    pub fn update_after_trade(&mut self, order_id: u64, executed_qty: u32) -> Result<(), &'static str> {
+    pub fn update_after_trade(
+        &mut self,
+        order_id: u64,
+        executed_qty: u32,
+    ) -> Result<(), &'static str> {
         if let Some(order) = self.orders.iter().find(|o| o.read().id == order_id) {
             let mut order_ref = order.write();
             order_ref.filled_quantity += executed_qty;
-            
+
             if let Some(display_qty) = order_ref.display_quantity {
                 let remaining = order_ref.remaining_quantity() as u64;
                 self.visible_volume = std::cmp::min(display_qty as u64, remaining);
             } else {
                 self.visible_volume = self.visible_volume.saturating_sub(executed_qty as u64);
             }
-            
+
             Ok(())
         } else {
             Err("Order not found")
@@ -88,28 +94,34 @@ impl PriceLevel {
         if let Some(position) = self.orders.iter().position(|o| o.read().id == order_id) {
             let order = &self.orders[position];
             let order_ref = order.read();
-            
+
             if order_ref.order_type != OrderType::Iceberg {
                 return Err("Not an iceberg order");
             }
-            
-            let display_qty = order_ref.display_quantity.ok_or("Missing display quantity")?;
+
+            let display_qty = order_ref
+                .display_quantity
+                .ok_or("Missing display quantity")?;
             let remaining = order_ref.remaining_quantity();
             let new_visible = std::cmp::min(display_qty, remaining);
-            
+
             self.visible_volume = new_visible as u64;
-            
+
             Ok(())
         } else {
             Err("Order not found in price level")
         }
     }
+
+    pub fn get_price(&self) -> u64 {
+        self.price
+    }
 }
 
 pub struct StopOrderBook {
     symbol: String,
-    buy_stop_orders: HashMap<u64, Vec<Arc<RwLock<Order>>>>,  
-    sell_stop_orders: HashMap<u64, Vec<Arc<RwLock<Order>>>>, 
+    buy_stop_orders: HashMap<u64, Vec<Arc<RwLock<Order>>>>,
+    sell_stop_orders: HashMap<u64, Vec<Arc<RwLock<Order>>>>,
     order_map: HashMap<u64, Arc<RwLock<Order>>>,
 }
 
@@ -121,6 +133,10 @@ impl StopOrderBook {
             sell_stop_orders: HashMap::new(),
             order_map: HashMap::new(),
         }
+    }
+
+    pub fn get_symbol(&self) -> &str {
+        &self.symbol
     }
 
     pub fn add_stop_order(&mut self, order: Arc<RwLock<Order>>) -> Result<(), &'static str> {
@@ -143,7 +159,10 @@ impl StopOrderBook {
             Side::Sell => &mut self.sell_stop_orders,
         };
 
-        orders_map.entry(stop_price).or_insert_with(Vec::new).push(Arc::clone(&order));
+        orders_map
+            .entry(stop_price)
+            .or_insert_with(Vec::new)
+            .push(Arc::clone(&order));
 
         Ok(())
     }
@@ -211,6 +230,12 @@ impl StopOrderBook {
     }
 }
 
+#[derive(Default, Clone)]
+pub struct MarketDepth {
+    pub bid_levels: Vec<(u64, u64)>, 
+    pub ask_levels: Vec<(u64, u64)>, 
+}
+
 pub struct OrderBook {
     symbol: String,
     pub buy_levels: HashMap<u64, PriceLevel>,
@@ -218,6 +243,8 @@ pub struct OrderBook {
     order_map: HashMap<u64, Arc<RwLock<Order>>>,
     stop_order_book: StopOrderBook,
     pub last_trade_price: Option<u64>,
+    depth: RwLock<MarketDepth>,
+    depth_levels: usize, 
 }
 
 impl OrderBook {
@@ -229,6 +256,8 @@ impl OrderBook {
             order_map: HashMap::new(),
             stop_order_book: StopOrderBook::new(symbol),
             last_trade_price: None,
+            depth: RwLock::new(MarketDepth::default()),
+            depth_levels: 10, 
         }
     }
 
@@ -247,8 +276,12 @@ impl OrderBook {
             Side::Sell => &mut self.sell_levels,
         };
 
-        let level = levels.entry(price).or_insert_with(|| PriceLevel::new(price));
+        let level = levels
+            .entry(price)
+            .or_insert_with(|| PriceLevel::new(price));
         level.add_order(Arc::clone(&order));
+
+        self.update_depth();
 
         Ok(())
     }
@@ -286,6 +319,8 @@ impl OrderBook {
                         levels.remove(&price);
                     }
 
+                    self.update_depth();
+
                     return Some(removed_order);
                 }
             }
@@ -295,7 +330,11 @@ impl OrderBook {
     }
 
     pub fn cancel_order(&mut self, order_id: u64) -> Option<Arc<RwLock<Order>>> {
-        self.remove_order(order_id)
+        let result = self.remove_order(order_id);
+
+        self.update_depth();
+
+        result
     }
 
     pub fn get_best_bid_price(&self) -> Option<u64> {
@@ -312,7 +351,8 @@ impl OrderBook {
         let triggered_orders = self.stop_order_book.get_triggered_orders(price);
 
         if !triggered_orders.is_empty() {
-            self.stop_order_book.remove_triggered_orders(&triggered_orders);
+            self.stop_order_book
+                .remove_triggered_orders(&triggered_orders);
 
             for order in triggered_orders {
                 let mut order_ref = order.write();
@@ -323,8 +363,7 @@ impl OrderBook {
                         Side::Buy => self.get_best_ask_price().unwrap_or(price),
                         Side::Sell => self.get_best_bid_price().unwrap_or(price),
                     };
-                }
-                else if order_ref.order_type == OrderType::StopLimit {
+                } else if order_ref.order_type == OrderType::StopLimit {
                     order_ref.order_type = OrderType::Limit;
                 }
 
@@ -364,7 +403,10 @@ impl OrderBook {
         self.order_map.get(&order_id).cloned()
     }
 
-    pub fn replenish_iceberg_order(&mut self, order: Arc<RwLock<Order>>) -> Result<(), &'static str> {
+    pub fn replenish_iceberg_order(
+        &mut self,
+        order: Arc<RwLock<Order>>,
+    ) -> Result<(), &'static str> {
         let order_ref = order.read();
         let price = order_ref.price;
         let side = order_ref.side;
@@ -385,6 +427,101 @@ impl OrderBook {
         } else {
             Err("Price level not found")
         }
+    }
+
+    fn update_depth(&self) {
+        let mut depth = self.depth.write();
+        depth.bid_levels.clear();
+        depth.ask_levels.clear();
+
+        let mut bid_prices: Vec<_> = self.buy_levels.keys().cloned().collect();
+        bid_prices.sort_by(|a, b| b.cmp(a));
+        for &price in bid_prices.iter().take(self.depth_levels) {
+            if let Some(level) = self.buy_levels.get(&price) {
+                depth.bid_levels.push((price, level.visible_volume));
+            }
+        }
+
+        let mut ask_prices: Vec<_> = self.sell_levels.keys().cloned().collect();
+        ask_prices.sort();
+        for &price in ask_prices.iter().take(self.depth_levels) {
+            if let Some(level) = self.sell_levels.get(&price) {
+                depth.ask_levels.push((price, level.visible_volume));
+            }
+        }
+    }
+
+    pub fn get_market_depth(&self) -> MarketDepth {
+        self.depth.read().clone()
+    }
+
+    pub fn set_depth_levels(&mut self, levels: usize) {
+        self.depth_levels = levels;
+        self.update_depth();
+    }
+
+    pub fn create_snapshot(&self) -> OrderBookSnapshot {
+        let mut buy_levels = HashMap::new();
+        let mut sell_levels = HashMap::new();
+        let mut stop_orders = Vec::new();
+
+        for (&price, level) in &self.buy_levels {
+            let orders = level
+                .orders
+                .iter()
+                .map(|o| OrderSnapshot::from(&*o.read()))
+                .collect();
+
+            buy_levels.insert(
+                price,
+                PriceLevelSnapshot {
+                    price,
+                    orders,
+                    total_volume: level.total_volume,
+                    visible_volume: level.visible_volume,
+                },
+            );
+        }
+
+        for (&price, level) in &self.sell_levels {
+            let orders = level
+                .orders
+                .iter()
+                .map(|o| OrderSnapshot::from(&*o.read()))
+                .collect();
+
+            sell_levels.insert(
+                price,
+                PriceLevelSnapshot {
+                    price,
+                    orders,
+                    total_volume: level.total_volume,
+                    visible_volume: level.visible_volume,
+                },
+            );
+        }
+
+        {
+            let snapshot_stop_orders: Vec<_> = self
+                .stop_order_book
+                .order_map
+                .values()
+                .map(|o| OrderSnapshot::from(&*o.read()))
+                .collect();
+            stop_orders.extend(snapshot_stop_orders);
+        }
+
+        OrderBookSnapshot {
+            symbol: self.symbol.clone(),
+            buy_levels,
+            sell_levels,
+            stop_orders,
+            last_trade_price: self.last_trade_price,
+        }
+    }
+
+    pub fn restore_from_snapshot(snapshot: &OrderBookSnapshot) -> Self {
+        snapshot.restore()
     }
 }
 
@@ -409,4 +546,35 @@ impl ConcurrentOrderBook {
         }
     }
 
+    pub fn get_symbol(&self) -> &str {
+        &self.symbol
+    }
+
+    pub fn add_order(&self, order: Arc<RwLock<Order>>) -> Result<(), &'static str> {
+        let order_ref = order.read();
+        let order_id = order_ref.id;
+        let price = order_ref.price;
+        let side = order_ref.side;
+        drop(order_ref);
+
+        let levels = match side {
+            Side::Buy => &self.buy_levels,
+            Side::Sell => &self.sell_levels,
+        };
+
+        let mut entry = levels
+            .entry(price)
+            .or_insert_with(|| CachePadded::new(PriceLevel::new(price)));
+        entry.value_mut().add_order(Arc::clone(&order));
+        self.order_map.insert(order_id, order);
+        Ok(())
+    }
+
+    pub fn get_last_trade_price(&self) -> Option<u64> {
+        *self.last_trade_price.read()
+    }
+
+    pub fn update_last_trade_price(&self, price: u64) {
+        *self.last_trade_price.write() = Some(price);
+    }
 }

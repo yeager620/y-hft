@@ -1,7 +1,7 @@
 use criterion::Criterion;
 use exchange_rs::{
-    order::{Order, Side, OrderType},
     matching_engine::MatchingEngine,
+    order::{Order, OrderType, Side},
 };
 
 pub fn bench_limit_order_matching(c: &mut Criterion) {
@@ -14,16 +14,9 @@ pub fn bench_limit_order_matching(c: &mut Criterion) {
 
             for i in 0..1000 {
                 let side = if i % 2 == 0 { Side::Buy } else { Side::Sell };
-                let price = 100 + (i % 10); 
+                let price = 100 + (i % 10);
 
-                let order = Order::new(
-                    "AAPL".to_string(),
-                    side,
-                    OrderType::Limit,
-                    price,
-                    1,
-                    i,
-                );
+                let order = Order::new("AAPL".to_string(), side, OrderType::Limit, price, 1, i);
 
                 let _ = engine.place_order(order);
             }

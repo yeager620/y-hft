@@ -1,20 +1,13 @@
-use exchange_rs::order::{Order, Side, OrderType, OrderStatus, TimeInForce};
+use exchange_rs::order::{Order, OrderStatus, OrderType, Side, TimeInForce};
 use exchange_rs::orderbook::{OrderBook, PriceLevel, StopOrderBook};
-use std::sync::Arc;
 use parking_lot::RwLock;
+use std::sync::Arc;
 
 #[test]
 fn test_price_level() {
     let mut level = PriceLevel::new(100);
 
-    let mut order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let mut order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
     order.id = 1;
 
     let order_arc = Arc::new(RwLock::new(order));
@@ -36,21 +29,14 @@ fn test_price_level_multiple_orders() {
     let mut level = PriceLevel::new(100);
 
     for i in 1..=5 {
-        let mut order = Order::new(
-            "AAPL".to_string(),
-            Side::Buy,
-            OrderType::Limit,
-            100,
-            10,
-            i,
-        );
+        let mut order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, i);
         order.id = i;
 
         let order_arc = Arc::new(RwLock::new(order));
         level.add_order(Arc::clone(&order_arc));
     }
 
-    assert_eq!(level.total_volume, 50); 
+    assert_eq!(level.total_volume, 50);
     assert_eq!(level.visible_volume, 50);
 
     let removed = level.remove_order(3);
@@ -66,14 +52,7 @@ fn test_price_level_multiple_orders() {
 fn test_order_book_basic() {
     let mut book = OrderBook::new("AAPL");
 
-    let mut buy_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let mut buy_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
     buy_order.id = 1;
 
     let buy_order_arc = Arc::new(RwLock::new(buy_order));
@@ -82,14 +61,7 @@ fn test_order_book_basic() {
 
     assert_eq!(book.get_best_bid_price(), Some(100));
 
-    let mut sell_order = Order::new(
-        "AAPL".to_string(),
-        Side::Sell,
-        OrderType::Limit,
-        110,
-        5,
-        2,
-    );
+    let mut sell_order = Order::new("AAPL".to_string(), Side::Sell, OrderType::Limit, 110, 5, 2);
     sell_order.id = 2;
 
     let sell_order_arc = Arc::new(RwLock::new(sell_order));
@@ -109,7 +81,7 @@ fn test_order_book_multiple_price_levels() {
     let mut book = OrderBook::new("AAPL");
 
     for i in 0..5 {
-        let price = 100 - i; 
+        let price = 100 - i;
         let mut order = Order::new(
             "AAPL".to_string(),
             Side::Buy,
@@ -125,7 +97,7 @@ fn test_order_book_multiple_price_levels() {
     }
 
     for i in 5..10 {
-        let price = 110 + (i - 5); 
+        let price = 110 + (i - 5);
         let mut order = Order::new(
             "AAPL".to_string(),
             Side::Sell,
@@ -157,7 +129,7 @@ fn test_stop_order() {
         "AAPL".to_string(),
         Side::Buy,
         OrderType::StopLimit,
-        110, 
+        110,
         10,
         1,
     );
@@ -212,7 +184,9 @@ fn test_stop_order_book() {
 
     let sell_stop_arc = Arc::new(RwLock::new(sell_stop));
 
-    stop_book.add_stop_order(Arc::clone(&sell_stop_arc)).unwrap();
+    stop_book
+        .add_stop_order(Arc::clone(&sell_stop_arc))
+        .unwrap();
 
     let triggered_at_100 = stop_book.get_triggered_orders(100);
     assert_eq!(triggered_at_100.len(), 0);
@@ -244,14 +218,7 @@ fn test_order_expiration() {
     let current_time = Order::get_nano_timestamp();
     let one_day_ns: i64 = 86_400_000_000_000;
 
-    let mut gtd_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let mut gtd_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
     gtd_order.id = 1;
     gtd_order.time_in_force = TimeInForce::GTD;
     gtd_order.expiration_time = current_time + one_day_ns;
@@ -259,14 +226,7 @@ fn test_order_expiration() {
     let gtd_order_arc = Arc::new(RwLock::new(gtd_order));
     book.add_order(Arc::clone(&gtd_order_arc)).unwrap();
 
-    let mut day_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        99,
-        10,
-        2,
-    );
+    let mut day_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 99, 10, 2);
     day_order.id = 2;
     day_order.time_in_force = TimeInForce::Day;
 
@@ -280,7 +240,7 @@ fn test_order_expiration() {
     assert_eq!(expired.len(), 0);
 
     let expired = book.expire_orders(current_time + one_day_ns + 1);
-    assert_eq!(expired.len(), 2); 
+    assert_eq!(expired.len(), 2);
 
     assert!(book.get_order(1).is_none());
     assert!(book.get_order(2).is_none());
@@ -298,11 +258,11 @@ fn test_iceberg_order() {
         Side::Buy,
         OrderType::Iceberg,
         100,
-        100, 
+        100,
         1,
     );
     iceberg.id = 1;
-    iceberg.display_quantity = Some(10); 
+    iceberg.display_quantity = Some(10);
 
     let iceberg_arc = Arc::new(RwLock::new(iceberg));
 
@@ -319,11 +279,12 @@ fn test_iceberg_order() {
         order_ref.filled_quantity = 5;
     }
 
-    book.replenish_iceberg_order(Arc::clone(&iceberg_arc)).unwrap();
+    book.replenish_iceberg_order(Arc::clone(&iceberg_arc))
+        .unwrap();
 
     {
         let level = book.buy_levels.get(&100).unwrap();
-        assert_eq!(level.get_visible_volume(), 5); 
+        assert_eq!(level.get_visible_volume(), 5);
     }
 
     {
@@ -331,11 +292,12 @@ fn test_iceberg_order() {
         order_ref.filled_quantity = 10;
     }
 
-    book.replenish_iceberg_order(Arc::clone(&iceberg_arc)).unwrap();
+    book.replenish_iceberg_order(Arc::clone(&iceberg_arc))
+        .unwrap();
 
     {
         let level = book.buy_levels.get(&100).unwrap();
-        assert_eq!(level.get_visible_volume(), 10); 
+        assert_eq!(level.get_visible_volume(), 10);
     }
 
     {
@@ -343,11 +305,12 @@ fn test_iceberg_order() {
         order_ref.filled_quantity = 95;
     }
 
-    book.replenish_iceberg_order(Arc::clone(&iceberg_arc)).unwrap();
+    book.replenish_iceberg_order(Arc::clone(&iceberg_arc))
+        .unwrap();
 
     {
         let level = book.buy_levels.get(&100).unwrap();
-        assert_eq!(level.get_visible_volume(), 5); 
+        assert_eq!(level.get_visible_volume(), 5);
     }
 }
 
@@ -368,14 +331,7 @@ fn test_empty_order_book() {
 fn test_order_book_error_handling() {
     let mut book = OrderBook::new("AAPL");
 
-    let mut regular_order = Order::new(
-        "AAPL".to_string(),
-        Side::Buy,
-        OrderType::Limit,
-        100,
-        10,
-        1,
-    );
+    let mut regular_order = Order::new("AAPL".to_string(), Side::Buy, OrderType::Limit, 100, 10, 1);
     regular_order.id = 1;
 
     let regular_order_arc = Arc::new(RwLock::new(regular_order));

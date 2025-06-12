@@ -1,8 +1,5 @@
 use criterion::Criterion;
-use exchange_rs::{
-    optimizations::OrderPool,
-    order::{Order, Side, OrderType},
-};
+use exchange_rs::optimizations::OrderPool;
 
 pub fn bench_order_pool(c: &mut Criterion) {
     let mut group = c.benchmark_group("order_pool");

@@ -1,11 +1,11 @@
 use criterion::Criterion;
-use std::sync::Arc;
-use parking_lot::Mutex;
 use exchange_rs::{
     matching_engine::MatchingEngine,
-    order::{Order, Side, OrderType},
     optimizations::OrderProcessorPool,
+    order::{Order, OrderType, Side},
 };
+use parking_lot::Mutex;
+use std::sync::Arc;
 
 pub fn bench_concurrent_order_processing(c: &mut Criterion) {
     let mut group = c.benchmark_group("concurrent_processing");
@@ -25,14 +25,7 @@ pub fn bench_concurrent_order_processing(c: &mut Criterion) {
                 let side = if i % 2 == 0 { Side::Buy } else { Side::Sell };
                 let price = 100 + (i % 10);
 
-                let order = Order::new(
-                    "AAPL".to_string(),
-                    side,
-                    OrderType::Limit,
-                    price,
-                    1,
-                    i,
-                );
+                let order = Order::new("AAPL".to_string(), side, OrderType::Limit, price, 1, i);
 
                 let _ = pool.submit_order(order);
             }
