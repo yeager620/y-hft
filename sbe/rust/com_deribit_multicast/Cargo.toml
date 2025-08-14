@@ -1,0 +1,10 @@
+[package]
+name = "deribit_multicast_com_deribit_multicast"
+version = "0.1.0"
+authors = ["sbetool"]
+description = "null"
+edition = "2018"
+
+[lib]
+name = "deribit_multicast_com_deribit_multicast"
+path = "src/lib.rs"

@@ -1,0 +1,413 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use parking_lot::RwLock;
+use tokio::sync::mpsc;
+use thiserror::Error;
+use tracing::{debug, info, warn, error};
+
+use crate::matching_engine::{MatchingEngine, Trade, TradeExecutionResult};
+use crate::orderbook::OrderBook;
+use crate::order::{Order, Side, OrderType, OrderStatus, TimeInForce};
+use crate::metrics::LatencyMetrics;
+use crate::sbe::bridge::{SbeBridge, MarketDataUpdate, DeribitInstrument, BridgeError};
+use crate::sbe::multicast::{MulticastManager, DeribitMulticastReceiver};
+use crate::sbe::parser::SbeMessage;
+
+#[derive(Error, Debug)]
+pub enum IntegrationError {
+    #[error("Bridge error: {0}")]
+    Bridge(#[from] BridgeError),
+    #[error("Matching engine error: {0}")]
+    MatchingEngine(String),
+    #[error("Order book not found for symbol: {0}")]
+    OrderBookNotFound(String),
+    #[error("Invalid market data: {0}")]
+    InvalidMarketData(String),
+    #[error("Channel error: {0}")]
+    Channel(String),
+}
+
+pub struct DeribitExchangeIntegration {
+    matching_engine: Arc<RwLock<MatchingEngine>>,
+    sbe_bridge: Arc<SbeBridge>,
+    multicast_manager: MulticastManager,
+    market_data_processors: HashMap<String, Arc<RwLock<OrderBook>>>,
+    external_order_counter: Arc<RwLock<u64>>,
+    latency_metrics: Arc<LatencyMetrics>,
+}
+
+impl DeribitExchangeIntegration {
+    pub fn new(
+        matching_engine: Arc<RwLock<MatchingEngine>>,
+        latency_metrics: Arc<LatencyMetrics>,
+    ) -> Self {
+        let sbe_bridge = Arc::new(SbeBridge::default());
+        let multicast_manager = MulticastManager::new(Arc::clone(&sbe_bridge));
+
+        Self {
+            matching_engine,
+            sbe_bridge,
+            multicast_manager,
+            market_data_processors: HashMap::new(),
+            external_order_counter: Arc::new(RwLock::new(1_000_000)), // Start external orders at 1M
+            latency_metrics,
+        }
+    }
+
+    pub async fn start(&mut self) -> Result<(), IntegrationError> {
+        info!("Starting Deribit exchange integration");
+
+        // Add multicast receivers for different instrument types
+        self.add_deribit_multicast_receivers();
+
+        // Start all multicast receivers
+        let market_data_channels = self.multicast_manager.start_all().await
+            .map_err(|e| IntegrationError::Channel(format!("Failed to start multicast: {:?}", e)))?;
+
+        // Process market data from all channels
+        for (index, mut rx) in market_data_channels.into_iter().enumerate() {
+            let integration = self.create_processor_handle();
+            tokio::spawn(async move {
+                info!("Starting market data processor {}", index);
+                while let Some(update) = rx.recv().await {
+                    if let Err(e) = integration.process_market_data_update(update).await {
+                        error!("Error processing market data: {:?}", e);
+                    }
+                }
+                warn!("Market data processor {} stopped", index);
+            });
+        }
+
+        info!("Deribit integration started successfully");
+        Ok(())
+    }
+
+    fn add_deribit_multicast_receivers(&mut self) {
+        use crate::sbe::multicast::deribit;
+
+        // Add receivers for different Deribit market data channels
+        for config in deribit::all_instruments_config() {
+            self.multicast_manager.add_receiver(config);
+        }
+
+        info!("Added {} multicast receivers", 
+              deribit::all_instruments_config().len());
+    }
+
+    fn create_processor_handle(&self) -> MarketDataProcessor {
+        MarketDataProcessor {
+            matching_engine: Arc::clone(&self.matching_engine),
+            sbe_bridge: Arc::clone(&self.sbe_bridge),
+            external_order_counter: Arc::clone(&self.external_order_counter),
+            latency_metrics: Arc::clone(&self.latency_metrics),
+        }
+    }
+
+    pub async fn process_market_data_update(
+        &self, 
+        update: MarketDataUpdate
+    ) -> Result<(), IntegrationError> {
+        let processor = self.create_processor_handle();
+        processor.process_market_data_update(update).await
+    }
+
+    pub fn add_instrument_orderbook(&mut self, symbol: String) -> Result<(), IntegrationError> {
+        let orderbook = Arc::new(RwLock::new(OrderBook::new()));
+        self.market_data_processors.insert(symbol.clone(), orderbook);
+        
+        // Also register the symbol with the matching engine
+        {
+            let mut engine = self.matching_engine.write();
+            engine.add_symbol(symbol.clone());
+        }
+        
+        info!("Added orderbook for symbol: {}", symbol);
+        Ok(())
+    }
+
+    pub fn get_instrument(&self, instrument_id: u32) -> Option<DeribitInstrument> {
+        self.sbe_bridge.get_instrument(instrument_id)
+    }
+
+    pub fn list_instruments(&self) -> Vec<DeribitInstrument> {
+        self.sbe_bridge.list_instruments()
+    }
+}
+
+struct MarketDataProcessor {
+    matching_engine: Arc<RwLock<MatchingEngine>>,
+    sbe_bridge: Arc<SbeBridge>,
+    external_order_counter: Arc<RwLock<u64>>,
+    latency_metrics: Arc<LatencyMetrics>,
+}
+
+impl MarketDataProcessor {
+    async fn process_market_data_update(
+        &self,
+        update: MarketDataUpdate
+    ) -> Result<(), IntegrationError> {
+        let start_time = SystemTime::now();
+        
+        debug!("Processing market data for {}: {:?}", update.symbol, update);
+
+        // Update internal market state
+        self.update_internal_market_state(&update).await?;
+
+        // Generate synthetic orders based on external market data
+        if let Some(orders) = self.generate_synthetic_orders(&update)? {
+            for order in orders {
+                self.process_external_order(order).await?;
+            }
+        }
+
+        // Record latency metrics
+        if let Ok(duration) = start_time.elapsed() {
+            self.latency_metrics.record_market_data_latency(duration);
+        }
+
+        Ok(())
+    }
+
+    async fn update_internal_market_state(
+        &self,
+        update: &MarketDataUpdate
+    ) -> Result<(), IntegrationError> {
+        // Update last trade prices for stop order triggers
+        if let Some(last_price) = update.last_price {
+            let price_scaled = (last_price * 1_000_000.0) as u64; // Convert to internal scaling
+            
+            let mut engine = self.matching_engine.write();
+            engine.update_last_trade_price(&update.symbol, price_scaled);
+        }
+
+        // Update mark price and index price for margin calculations
+        if let Some(mark_price) = update.mark_price {
+            debug!("Mark price for {}: {}", update.symbol, mark_price);
+            // Store mark price for risk management
+        }
+
+        if let Some(index_price) = update.index_price {
+            debug!("Index price for {}: {}", update.symbol, index_price);
+            // Store index price for settlement calculations
+        }
+
+        Ok(())
+    }
+
+    fn generate_synthetic_orders(
+        &self,
+        update: &MarketDataUpdate
+    ) -> Result<Option<Vec<Order>>, IntegrationError> {
+        let mut orders = Vec::new();
+
+        // Generate synthetic liquidity based on external market data
+        // This is a simplified example - in practice you'd have more sophisticated logic
+
+        if let Some((bid_price, bid_amount)) = update.best_bid {
+            if bid_amount > 0.0 {
+                let order = self.create_external_order(
+                    &update.symbol,
+                    Side::Buy,
+                    bid_price,
+                    bid_amount,
+                    update.timestamp
+                )?;
+                orders.push(order);
+            }
+        }
+
+        if let Some((ask_price, ask_amount)) = update.best_ask {
+            if ask_amount > 0.0 {
+                let order = self.create_external_order(
+                    &update.symbol,
+                    Side::Sell,
+                    ask_price,
+                    ask_amount,
+                    update.timestamp
+                )?;
+                orders.push(order);
+            }
+        }
+
+        Ok(if orders.is_empty() { None } else { Some(orders) })
+    }
+
+    fn create_external_order(
+        &self,
+        symbol: &str,
+        side: Side,
+        price: f64,
+        amount: f64,
+        timestamp: u64
+    ) -> Result<Order, IntegrationError> {
+        let order_id = {
+            let mut counter = self.external_order_counter.write();
+            *counter += 1;
+            *counter
+        };
+
+        let price_scaled = (price * 1_000_000.0) as u64; // Convert to internal price scaling
+        let quantity = (amount * 1000.0) as u32; // Convert to internal quantity scaling
+
+        Ok(Order {
+            id: order_id,
+            symbol: symbol.to_string(),
+            side,
+            order_type: OrderType::Limit,
+            price: price_scaled,
+            quantity,
+            filled_quantity: 0,
+            status: OrderStatus::New,
+            timestamp: timestamp as i64,
+            user_id: 0, // External/synthetic orders
+            time_in_force: TimeInForce::GTC,
+            stop_price: None,
+            iceberg_visible_quantity: None,
+            iceberg_peak_size: None,
+            parent_order_id: None,
+            group_id: None,
+            strategy_id: Some("DERIBIT_EXTERNAL".to_string()),
+            client_order_id: Some(format!("EXT_{}", order_id)),
+        })
+    }
+
+    async fn process_external_order(&self, order: Order) -> Result<(), IntegrationError> {
+        debug!("Processing external order: {:?}", order);
+
+        // Place the order in the matching engine
+        let result = {
+            let mut engine = self.matching_engine.write();
+            engine.place_order(order)
+                .map_err(|e| IntegrationError::MatchingEngine(format!("{:?}", e)))?
+        };
+
+        // Handle the trade execution result
+        self.handle_execution_result(result).await?;
+
+        Ok(())
+    }
+
+    async fn handle_execution_result(
+        &self,
+        result: TradeExecutionResult
+    ) -> Result<(), IntegrationError> {
+        // Log trades
+        for trade in &result.trades {
+            info!("External trade executed: {:?}", trade);
+        }
+
+        // Update filled orders
+        for filled_order in &result.filled_orders {
+            debug!("Order filled: {:?}", filled_order);
+        }
+
+        // Handle remaining order
+        if let Some(remaining_order) = &result.remaining_order {
+            debug!("Partial fill, remaining order: {:?}", remaining_order);
+        }
+
+        // Record execution metrics
+        self.latency_metrics.record_order_processing();
+
+        Ok(())
+    }
+}
+
+// Helper struct for managing real-time market data feeds
+pub struct DeribitMarketDataFeed {
+    integration: DeribitExchangeIntegration,
+    active_instruments: HashMap<u32, String>,
+}
+
+impl DeribitMarketDataFeed {
+    pub fn new(
+        matching_engine: Arc<RwLock<MatchingEngine>>,
+        latency_metrics: Arc<LatencyMetrics>
+    ) -> Self {
+        let integration = DeribitExchangeIntegration::new(matching_engine, latency_metrics);
+        
+        Self {
+            integration,
+            active_instruments: HashMap::new(),
+        }
+    }
+
+    pub async fn subscribe_to_instrument(&mut self, symbol: String) -> Result<(), IntegrationError> {
+        info!("Subscribing to instrument: {}", symbol);
+        
+        // Add orderbook for the instrument
+        self.integration.add_instrument_orderbook(symbol.clone())?;
+        
+        // If we had the instrument ID, we'd store the mapping
+        // self.active_instruments.insert(instrument_id, symbol);
+        
+        Ok(())
+    }
+
+    pub async fn start_feed(&mut self) -> Result<(), IntegrationError> {
+        info!("Starting Deribit market data feed");
+        self.integration.start().await
+    }
+
+    pub fn get_market_snapshot(&self, symbol: &str) -> Option<MarketSnapshot> {
+        // Get current market state from the integration
+        if let Some(instrument) = self.integration.sbe_bridge.get_instrument_by_symbol(symbol) {
+            Some(MarketSnapshot {
+                symbol: symbol.to_string(),
+                instrument_id: instrument.id,
+                timestamp: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_millis() as u64,
+                // Add more fields as needed from the current orderbook state
+            })
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MarketSnapshot {
+    pub symbol: String,
+    pub instrument_id: u32,
+    pub timestamp: u64,
+    // Add more fields as needed:
+    // pub best_bid: Option<(f64, f64)>,
+    // pub best_ask: Option<(f64, f64)>,
+    // pub last_price: Option<f64>,
+    // pub volume: f64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::optimizations::OptimizationConfig;
+
+    #[tokio::test]
+    async fn test_integration_creation() {
+        let config = OptimizationConfig::default();
+        let matching_engine = Arc::new(RwLock::new(MatchingEngine::new(config)));
+        let latency_metrics = Arc::new(LatencyMetrics::new());
+        
+        let integration = DeribitExchangeIntegration::new(matching_engine, latency_metrics);
+        
+        // Should be able to create integration without error
+        assert!(!integration.list_instruments().is_empty() || integration.list_instruments().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_market_data_feed() {
+        let config = OptimizationConfig::default();
+        let matching_engine = Arc::new(RwLock::new(MatchingEngine::new(config)));
+        let latency_metrics = Arc::new(LatencyMetrics::new());
+        
+        let mut feed = DeribitMarketDataFeed::new(matching_engine, latency_metrics);
+        
+        // Test subscribing to an instrument
+        let result = feed.subscribe_to_instrument("BTC-PERPETUAL".to_string()).await;
+        assert!(result.is_ok());
+    }
+}

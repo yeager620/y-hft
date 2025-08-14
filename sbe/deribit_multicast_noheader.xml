@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<messageSchema package="com.deribit.multicast" id="1" version="3" byteOrder="littleEndian">
+	<types>
+		<type name="string8" primitiveType="char" length="8" />
+		<type name="string16" primitiveType="char" length="16" />
+		<enum name="bookChange" encodingType="uint8">
+			<validValue name="created">0</validValue>
+			<validValue name="changed">1</validValue>
+			<validValue name="deleted">2</validValue>
+		</enum>
+		<enum name="bookSide" encodingType="uint8">
+			<validValue name="ask">0</validValue>
+			<validValue name="bid">1</validValue>
+		</enum>
+		<enum name="instrumentState" encodingType="uint8">
+			<validValue name="created">0</validValue>
+			<validValue name="open">1</validValue>
+			<validValue name="closed">2</validValue>
+			<validValue name="settled">3</validValue>
+			<validValue name="deactivated">4</validValue>
+			<validValue name="inactive">5</validValue>
+			<validValue name="started">6</validValue>
+		</enum>
+		<enum name="tickDirection" encodingType="uint8">
+			<validValue name="plus">0</validValue>
+			<validValue name="zeroplus">1</validValue>
+			<validValue name="minus">2</validValue>
+			<validValue name="zerominus">3</validValue>
+		</enum>
+		<enum name="direction" encodingType="uint8">
+			<validValue name="buy">0</validValue>
+			<validValue name="sell">1</validValue>
+		</enum>
+		<enum name="rfqDirection" encodingType="uint8">
+			<validValue name="buy">0</validValue>
+			<validValue name="sell">1</validValue>
+			<validValue name="no_direction">2</validValue>
+		</enum>
+		<enum name="liquidation" encodingType="uint8">
+			<validValue name="none">0</validValue>
+			<validValue name="maker">1</validValue>
+			<validValue name="taker">2</validValue>
+			<validValue name="both">3</validValue>
+		</enum>
+		<enum name="yesNo" encodingType="uint8">
+			<validValue name="no">0</validValue>
+			<validValue name="yes">1</validValue>
+		</enum>
+		<enum name="instrumentKind" encodingType="uint8">
+			<validValue name="future">0</validValue>
+			<validValue name="option">1</validValue>
+			<validValue name="future_combo">2</validValue>
+			<validValue name="option_combo">3</validValue>
+			<validValue name="spot">4</validValue>
+		</enum>
+		<enum name="optionType" encodingType="uint8">
+			<validValue name="not_applicable">0</validValue>
+			<validValue name="call">1</validValue>
+			<validValue name="put">2</validValue>
+		</enum>
+		<enum name="instrumentType" encodingType="uint8">
+			<validValue name="not_applicable">0</validValue>
+			<validValue name="reversed">1</validValue>
+			<validValue name="linear">2</validValue>
+		</enum>
+		<enum name="period" encodingType="uint8">
+			<validValue name="perpetual">0</validValue>
+			<validValue name="minute">1</validValue>
+			<validValue name="hour">2</validValue>
+			<validValue name="day">3</validValue>
+			<validValue name="week">4</validValue>
+			<validValue name="month">5</validValue>
+			<validValue name="year">6</validValue>
+		</enum>
+		<composite name="messageHeader">
+			<type name="blockLength" primitiveType="uint16" />
+			<type name="templateId" primitiveType="uint16" />
+			<type name="schemaId" primitiveType="uint16" />
+			<type name="version" primitiveType="uint16" />
+			<type name="numGroups" primitiveType="uint16" />
+			<type name="numVarDataFields" primitiveType="uint16" />
+		</composite>
+		<composite name="groupSizeEncoding" description="Repeating group dimensions">
+			<type name="blockLength" primitiveType="uint16" description="Size of each element in the group" />
+			<type name="numInGroup" primitiveType="uint16" description="Number of elements in the group"/>
+			<type name="numGroups" primitiveType="uint16" description="Nested groups" />
+			<type name="numVarDataFields" primitiveType="uint16" description="Number of variable fields after nested group"/>
+		</composite>
+		<composite name="varString" description="Variable-length string">
+			<type name="length" primitiveType="uint8" />
+			<type name="varData" length="0" primitiveType="uint8" />
+		</composite>
+	</types>
+
+	<!-- Multicast messages-->
+	<message name="instrument" id="1000">
+		<field name="instrumentId" id ="1" type="uint32" />
+		<field name="instrumentState" id="2" type="instrumentState" />
+		<field name="kind" id="3" type="instrumentKind" />
+		<field name="instrumentType" id="4" type="instrumentType" />
+		<field name="optionType" id="5" type="optionType" />
+		<field name="rfq" id="6" type="yesNo" />
+		<field name="settlementPeriod" id="7" type="period" presence="optional" />
+		<field name="settlementPeriodCount" id="8" type="uint16" />
+		<field name="baseCurrency" id="9" type="string8" />
+		<field name="quoteCurrency" id="10" type="string8" />
+		<field name="counterCurrency" id="11" type="string8" />
+		<field name="settlementCurrency" id="12" type="string8" />
+		<field name="sizeCurrency" id="13" type="string8" />
+		<field name="creationTimestampMs" id="14" type="uint64" />
+		<field name="expirationTimestampMs" id="15" type="uint64" />
+		<field name="strikePrice" id="16" type="double" presence="optional" />
+		<field name="contractSize" id="17" type="double" />
+		<field name="minTradeAmount" id="18" type="double" />
+		<field name="tickSize" id="19" type="double" />
+		<field name="makerCommission" id="20" type="double" />
+		<field name="takerCommission" id="21" type="double" />
+		<field name="blockTradeCommission" id="22" type="double" presence="optional" />
+		<field name="maxLiquidationCommission" id="23" type="double" presence="optional" />
+		<field name="maxLeverage" id="24" type="double" presence="optional" />
+		<data name="instrumentName" id="25" type="varString" />
+	</message>
+	<message name="book" id="1001">
+		<field name="instrumentId" id="1" type="uint32" />
+		<field name="timestampMs" id="2" type="uint64" />
+		<field name="prevChangeId" id="3" type="uint64" />
+		<field name="changeId" id="4" type="uint64" />
+		<field name="isLast" id="5" type="yesNo" />
+		<group name="changesList" id="6" dimensionType="groupSizeEncoding">
+			<field name="side" id="1" type="bookSide" />
+			<field name="change" id="2" type="bookChange" />
+			<!-- Use double (64 bit float) encoding, SBE FIX price/amount decimal encoding makes sense when the 
+			decimal point is on a somewhat fixed position, for crypto, it can vary more by instrument -->
+			<field name="price" id="3" type="double" />
+			<field name="amount" id="4" type="double" />
+		</group>
+	</message>
+	<message name="trades" id="1002">
+		<field name="instrumentId" id="1" type="uint32" />
+		<group name="tradesList" id="2" dimensionType="groupSizeEncoding">
+			<field name="direction" id="1" type="direction" />
+			<field name="price" id="2" type="double" />
+			<field name="amount" id="3" type="double" />
+			<field name="timestampMs" id="4" type="uint64" />
+			<field name="markPrice" id="5" type="double" />
+			<field name="indexPrice" id="6" type="double" />
+			<field name="tradeSeq" id="7" type="uint64" />
+			<field name="tradeId" id="8" type="uint64" />
+			<field name="tickDirection" id="9" type="tickDirection" />
+			<field name="liquidation" id="10" type="liquidation" />
+			<field name="iv" id="11" type="double" presence="optional" />
+			<field name="blockTradeId" id="12" type="uint64" presence="optional" nullValue="0" />
+			<field name="comboTradeId" id="13" type="uint64" presence="optional" nullValue="0" />
+		</group>
+	</message>
+	<message name="ticker" id="1003">
+		<!-- according the the SBE spec, optional floats use the quietNaN null value 0xffffffffffffffff -->
+		<field name="instrumentId" id="1" type="uint32" />
+		<field name="instrumentState" id="2" type="instrumentState" />
+		<field name="timestampMs" id="3" type="uint64" />
+		<field name="openInterest" id="4" type="double" presence="optional" />
+		<field name="minSellPrice" id="5" type="double" />
+		<field name="maxBuyPrice" id="6" type="double" />
+		<field name="lastPrice" id="7" type="double" presence="optional"/>
+		<field name="indexPrice" id="8" type="double" />
+		<field name="markPrice" id="9" type="double" />
+		<field name="bestBidPrice" id="10" type="double" />
+		<field name="bestBidAmount" id="11" type="double" />
+		<field name="bestAskPrice" id="12" type="double" />
+		<field name="bestAskAmount" id="13" type="double" />
+		<field name="currentFunding" id="14" type="double" presence="optional" />
+		<field name="funding8h" id="15" type="double" presence="optional" />
+		<field name="estimatedDeliveryPrice" id="16" type="double" presence="optional"/>
+		<field name="deliveryPrice" id="17" type="double" presence="optional" />
+		<field name="settlementPrice" id="18" type="double" presence="optional" />
+	</message>
+	<message name="snapshot" id="1004">
+		<field name="instrumentId" id="1" type="uint32" />
+		<field name="timestampMs" id="2" type="uint64" />
+		<field name="changeId" id="3" type="uint64" />
+		<field name="isBookComplete" id="4" type="yesNo" />
+		<field name="isLastInBook" id="5" type="yesNo" />
+		<group name="levelsList" id="6" dimensionType="groupSizeEncoding">
+			<field name="side" id="1" type="bookSide" />
+			<field name="price" id="2" type="double" />
+			<field name="amount" id="3" type="double" />
+		</group>
+	</message>
+	<message name="snapshotStart" id="1005">
+		<field name="snapshotDelay" id="1" type="uint32" />
+	</message>
+	<message name="snapshotEnd" id="1006">
+	</message>
+	<message name="comboLegs" id="1007">
+		<field name="instrumentId" id="1" type="uint32" />
+		<group name="legsList" id="2" dimensionType="groupSizeEncoding">
+			<field name="legInstrumentId" id="1" type="uint32" />
+			<field name="legSize" id="2" type="int32" />
+		</group>
+	</message>
+	<message name="priceIndex" id="1008">
+		<field name="indexName" id="1" type="string16" />
+		<field name="price" id="2" type="double" />
+		<field name="timestampMs" id="3" type="uint64" />
+	</message>
+	<message name="rfq" id="1009">
+		<field name="instrumentId" id="1" type="uint32" />
+		<field name="state" id="2" type="yesNo" />
+		<field name="side" id="3" type="rfqDirection" />
+		<field name="amount" id="4" type="double" />
+		<field name="timestampMs" id="5" type="uint64" />
+	</message>
+	<message name="instrumentV2" id="1010" sinceVersion="3">
+		<field name="instrumentId" id ="1" type="uint32" />
+		<field name="instrumentState" id="2" type="instrumentState" />
+		<field name="kind" id="3" type="instrumentKind" />
+		<field name="instrumentType" id="4" type="instrumentType" />
+		<field name="optionType" id="5" type="optionType" />
+		<field name="settlementPeriod" id="6" type="period" presence="optional" />
+		<field name="settlementPeriodCount" id="7" type="uint16" />
+		<field name="baseCurrency" id="8" type="string8" />
+		<field name="quoteCurrency" id="9" type="string8" />
+		<field name="counterCurrency" id="10" type="string8" />
+		<field name="settlementCurrency" id="11" type="string8" />
+		<field name="sizeCurrency" id="12" type="string8" />
+		<field name="creationTimestampMs" id="13" type="uint64" />
+		<field name="expirationTimestampMs" id="14" type="uint64" />
+		<field name="strikePrice" id="15" type="double" presence="optional" />
+		<field name="contractSize" id="16" type="double" />
+		<field name="minTradeAmount" id="17" type="double" />
+		<field name="tickSize" id="18" type="double" />
+		<field name="makerCommission" id="19" type="double" />
+		<field name="takerCommission" id="20" type="double" />
+		<field name="blockTradeCommission" id="21" type="double" presence="optional" />
+		<field name="maxLiquidationCommission" id="22" type="double" presence="optional" />
+		<field name="maxLeverage" id="23" type="double" presence="optional" />
+		<group name="tickStepsList" id="24" dimensionType="groupSizeEncoding">
+			<field name="abovePrice" id="1" type="double" />
+			<field name="tickSize" id="2" type="double" />
+		</group>
+		<data name="instrumentName" id="25" type="varString" />
+	</message>
+</messageSchema>

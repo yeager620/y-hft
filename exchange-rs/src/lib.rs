@@ -6,3 +6,4 @@ pub mod orderbook;
 pub mod snapshot;
 pub mod fix;
 pub mod fix_gateway;
+pub mod sbe;
