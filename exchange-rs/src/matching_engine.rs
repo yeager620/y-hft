@@ -646,3 +646,6 @@ fn get_nano_timestamp() -> i64 {
         Err(_) => 0,
     }
 }
+
+#[cfg(test)]
+mod tests;

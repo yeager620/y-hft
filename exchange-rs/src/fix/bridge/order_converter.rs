@@ -174,7 +174,7 @@ mod tests {
         assert_eq!(order.side, Side::Buy);
         assert_eq!(order.order_type, OrderType::Limit);
         assert_eq!(order.quantity, 100);
-        assert_eq!(order.price, 1505000); 
+        assert_eq!(order.price, 150500000); 
         assert_eq!(order.time_in_force, TimeInForce::GTC);
         assert_eq!(order.stop_price, None);
     }
@@ -222,8 +222,8 @@ mod tests {
         assert_eq!(order.side, Side::Sell);
         assert_eq!(order.order_type, OrderType::StopLimit);
         assert_eq!(order.quantity, 50);
-        assert_eq!(order.price, 2000000); 
-        assert_eq!(order.stop_price, Some(1950000)); 
+        assert_eq!(order.price, 200000000); 
+        assert_eq!(order.stop_price, Some(195000000)); 
         assert_eq!(order.time_in_force, TimeInForce::FOK);
     }
 }

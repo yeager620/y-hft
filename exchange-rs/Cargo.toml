@@ -26,5 +26,13 @@ socket2 = "0.5"
 criterion = "0.5"
 
 [[bench]]
-name = "benchmark"
+name = "matching_engine_bench"
+harness = false
+
+[[bench]]
+name = "sbe_protocol_bench"
+harness = false
+
+[[bench]]
+name = "fix_protocol_bench"
 harness = false

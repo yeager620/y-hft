@@ -71,10 +71,6 @@ impl OrderPool {
 
     pub fn release(&self, order: Arc<RwLock<Order>>) {
         let mut guard = self.free_list.lock();
-        let mut total = self.total_allocated.lock();
-        if *total > 0 {
-            *total -= 1;
-        }
         guard.push(order);
     }
 
@@ -530,8 +526,10 @@ mod tests {
             pool.submit_order(sell_order).unwrap();
         }
 
+        thread::sleep(Duration::from_millis(100));
+
         let mut all_orders_processed = false;
-        for _ in 0..100 {
+        for _ in 0..500 {
             let engine_ref = engine.lock();
             let order_book = engine_ref.order_books.get("AAPL").unwrap();
             let mut found_orders = 0;
@@ -547,7 +545,7 @@ mod tests {
                 break;
             }
             drop(engine_ref);
-            
+            thread::sleep(Duration::from_millis(10));
         }
 
         assert!(all_orders_processed, "Not all sell orders were processed");

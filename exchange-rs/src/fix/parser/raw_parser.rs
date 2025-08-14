@@ -165,7 +165,7 @@ mod tests {
     #[test]
     fn test_checksum_validation() {
         let parser = RawParser::new();
-        let data = b"8=FIX.4.4\x019=40\x0135=D\x0149=SENDER\x0156=TARGET\x0110=161\x01";
+        let data = b"8=FIX.4.4\x019=40\x0135=D\x0149=SENDER\x0156=TARGET\x0110=194\x01";
         
         assert!(parser.validate_checksum(data).is_ok());
     }

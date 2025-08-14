@@ -578,3 +578,6 @@ impl ConcurrentOrderBook {
         *self.last_trade_price.write() = Some(price);
     }
 }
+
+#[cfg(test)]
+mod tests;
