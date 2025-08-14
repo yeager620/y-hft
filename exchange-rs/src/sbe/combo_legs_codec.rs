@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 
 pub use encoder::*;
 pub use decoder::*;
@@ -63,21 +63,21 @@ pub mod encoder {
             header
         }
 
-        /// primitive field 'instrumentId'
-        /// - min value: 0
-        /// - max value: 4294967294
-        /// - null value: 4294967295
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 4
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn instrument_id(&mut self, value: u32) {
             let offset = self.offset;
             self.get_buf_mut().put_u32_at(offset, value);
         }
 
-        /// GROUP ENCODER
+        
         #[inline]
         pub fn legs_list_encoder(self, count: u16, legs_list_encoder: LegsListEncoder<Self>) -> LegsListEncoder<Self> {
             legs_list_encoder.wrap(self, count)
@@ -146,7 +146,7 @@ pub mod encoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// will return Some(current index) when successful otherwise None
+        
         #[inline]
         pub fn advance(&mut self) -> SbeResult<Option<usize>> {
             let index = self.index.wrapping_add(1);
@@ -163,28 +163,28 @@ pub mod encoder {
             }
         }
 
-        /// primitive field 'legInstrumentId'
-        /// - min value: 0
-        /// - max value: 4294967294
-        /// - null value: 4294967295
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 4
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn leg_instrument_id(&mut self, value: u32) {
             let offset = self.offset;
             self.get_buf_mut().put_u32_at(offset, value);
         }
 
-        /// primitive field 'legSize'
-        /// - min value: -2147483647
-        /// - max value: 2147483647
-        /// - null value: -2147483648
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 4
-        /// - encodedLength: 4
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn leg_size(&mut self, value: i32) {
             let offset = self.offset + 4;
@@ -193,7 +193,7 @@ pub mod encoder {
 
     }
 
-} // end encoder
+} 
 
 pub mod decoder {
     use super::*;
@@ -263,13 +263,13 @@ pub mod decoder {
             )
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn instrument_id(&self) -> u32 {
             self.get_buf().get_u32_at(self.offset)
         }
 
-        /// GROUP DECODER
+        
         #[inline]
         pub fn legs_list_decoder(self) -> LegsListDecoder<Self> {
             let acting_version = self.acting_version;
@@ -326,7 +326,7 @@ pub mod decoder {
             self
         }
 
-        /// group token - Token{signal=BEGIN_GROUP, name='legsList', referencedName='null', description='null', packageName='null', id=2, version=0, deprecated=0, encodedLength=8, offset=4, componentTokenCount=14, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        
         #[inline]
         pub fn parent(&mut self) -> SbeResult<P> {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
@@ -337,7 +337,7 @@ pub mod decoder {
             self.count
         }
 
-        /// will return Some(current index) when successful otherwise None
+        
         pub fn advance(&mut self) -> SbeResult<Option<usize>> {
             let index = self.index.wrapping_add(1);
             if index >= self.count as usize {
@@ -353,13 +353,13 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn leg_instrument_id(&self) -> u32 {
             self.get_buf().get_u32_at(self.offset)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn leg_size(&self) -> i32 {
             self.get_buf().get_i32_at(self.offset + 4)
@@ -367,5 +367,5 @@ pub mod decoder {
 
     }
 
-} // end decoder
+} 
 

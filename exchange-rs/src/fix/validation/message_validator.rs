@@ -63,7 +63,7 @@ impl MessageValidator {
                 required.extend(vec![41, 11, 55, 54, 60]);
             }
             MessageType::Heartbeat => {
-                // Only standard header and trailer required
+                
             }
             MessageType::Logon => {
                 required.extend(vec![98, 108]);

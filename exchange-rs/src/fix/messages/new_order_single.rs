@@ -6,18 +6,18 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct NewOrderSingle {
     pub header: StandardHeader,
-    pub cl_ord_id: String,           // Tag 11
-    pub account: Option<String>,      // Tag 1
-    pub handl_inst: char,            // Tag 21 - '1', '2', '3'
-    pub symbol: String,              // Tag 55
-    pub side: char,                  // Tag 54 - '1' Buy, '2' Sell
-    pub transact_time: String,       // Tag 60
-    pub order_qty: u32,              // Tag 38
-    pub ord_type: char,              // Tag 40 - '1' Market, '2' Limit, '3' Stop, '4' Stop limit
-    pub price: Option<f64>,          // Tag 44 - Required for limit orders
-    pub stop_px: Option<f64>,        // Tag 99 - Required for stop orders
-    pub time_in_force: Option<char>, // Tag 59 - '0' Day, '1' GTC, '3' IOC, '4' FOK
-    pub exec_inst: Option<String>,   // Tag 18
+    pub cl_ord_id: String,           
+    pub account: Option<String>,      
+    pub handl_inst: char,            
+    pub symbol: String,              
+    pub side: char,                  
+    pub transact_time: String,       
+    pub order_qty: u32,              
+    pub ord_type: char,              
+    pub price: Option<f64>,          
+    pub stop_px: Option<f64>,        
+    pub time_in_force: Option<char>, 
+    pub exec_inst: Option<String>,   
     pub trailer: Trailer,
 }
 
@@ -139,8 +139,8 @@ impl NewOrderSingle {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Side {
-    Buy,  // '1'
-    Sell, // '2'
+    Buy,  
+    Sell, 
 }
 
 impl Side {
@@ -162,10 +162,10 @@ impl Side {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OrdType {
-    Market,    // '1'
-    Limit,     // '2'
-    Stop,      // '3'
-    StopLimit, // '4'
+    Market,    
+    Limit,     
+    Stop,      
+    StopLimit, 
 }
 
 impl OrdType {
@@ -191,10 +191,10 @@ impl OrdType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TimeInForce {
-    Day,              // '0'
-    GoodTillCancel,   // '1'
-    ImmediateOrCancel, // '3'
-    FillOrKill,       // '4'
+    Day,              
+    GoodTillCancel,   
+    ImmediateOrCancel, 
+    FillOrKill,       
 }
 
 impl TimeInForce {

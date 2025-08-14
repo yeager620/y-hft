@@ -2,7 +2,8 @@ use std::fmt;
 use thiserror::Error;
 use tracing::{debug, error, warn};
 
-use super::{ReadBuf, MessageHeaderDecoder};
+use super::{ReadBuf};
+use crate::sbe::message_header_codec::decoder::MessageHeaderDecoder;
 
 #[derive(Error, Debug)]
 pub enum SbeParseError {
@@ -109,8 +110,8 @@ pub struct BookMessage {
 
 #[derive(Debug, Clone)]
 pub struct BookChange {
-    pub side: u8, // 0 = ask, 1 = bid
-    pub change: u8, // 0 = created, 1 = changed, 2 = deleted
+    pub side: u8, 
+    pub change: u8, 
     pub price: f64,
     pub amount: f64,
 }
@@ -123,7 +124,7 @@ pub struct TradesMessage {
 
 #[derive(Debug, Clone)]
 pub struct Trade {
-    pub direction: u8, // 0 = buy, 1 = sell
+    pub direction: u8, 
     pub price: f64,
     pub amount: f64,
     pub timestamp_ms: u64,
@@ -177,6 +178,7 @@ pub struct SnapshotLevel {
     pub amount: f64,
 }
 
+
 #[derive(Debug, Clone)]
 pub struct SnapshotStartMessage {
     pub snapshot_delay: u32,
@@ -209,9 +211,12 @@ pub struct ComboLegsMessage {
 
 #[derive(Debug, Clone)]
 pub struct ComboLeg {
-    pub leg_instrument_id: u32,
-    pub leg_size: i32,
+    pub instrument_id: u32,
+    pub ratio: f64,
+    pub direction: u8,
 }
+
+
 
 #[derive(Debug, Clone)]
 pub struct SbeMessageParser;

@@ -547,7 +547,7 @@ mod tests {
                 break;
             }
             drop(engine_ref);
-            // thread::sleep(Duration::from_millis(1));
+            
         }
 
         assert!(all_orders_processed, "Not all sell orders were processed");
@@ -610,7 +610,7 @@ mod tests {
         for _ in 0..100 {
             let counter_clone = Arc::clone(&counter);
             pool.execute(move || {
-                // thread::sleep(Duration::from_millis(1));
+                
                 counter_clone.fetch_add(1, Ordering::SeqCst);
             });
         }

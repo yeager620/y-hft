@@ -8,9 +8,11 @@ use chrono;
 use crate::order::{Order, Side, OrderType, OrderStatus, TimeInForce};
 use crate::matching_engine::{Trade, MatchingEngine};
 use crate::orderbook::OrderBook;
+use crate::sbe::{InstrumentKind, InstrumentType, OptionType};
+use crate::PRICE_SCALE_FACTOR;
 use crate::sbe::parser::{
     SbeMessage, BookMessage, BookChange, TradesMessage, Trade as SbeTrade,
-    TickerMessage, SnapshotMessage, SnapshotLevel, InstrumentMessage
+    TickerMessage, SnapshotMessage, InstrumentMessage, SnapshotLevel
 };
 
 #[derive(Error, Debug)]
@@ -46,28 +48,7 @@ pub struct DeribitInstrument {
     pub is_active: bool,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum InstrumentKind {
-    Future = 0,
-    Option = 1,
-    FutureCombo = 2,
-    OptionCombo = 3,
-    Spot = 4,
-}
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum InstrumentType {
-    NotApplicable = 0,
-    Reversed = 1,
-    Linear = 2,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum OptionType {
-    NotApplicable = 0,
-    Call = 1,
-    Put = 2,
-}
 
 #[derive(Debug, Clone)]
 pub struct MarketDataUpdate {
@@ -82,18 +63,25 @@ pub struct MarketDataUpdate {
 }
 
 pub struct SbeBridge {
-    instruments: RwLock<HashMap<u32, DeribitInstrument>>,
+    pub instruments: RwLock<HashMap<u32, DeribitInstrument>>,
     symbol_to_id: RwLock<HashMap<String, u32>>,
-    price_scale: u64,
+    external_user_id_counter: RwLock<u64>,
 }
 
 impl SbeBridge {
-    pub fn new(price_scale: u64) -> Self {
+    pub fn new(_price_scale: u64) -> Self {
+        
         Self {
             instruments: RwLock::new(HashMap::new()),
             symbol_to_id: RwLock::new(HashMap::new()),
-            price_scale,
+            external_user_id_counter: RwLock::new(1000), 
         }
+    }
+
+    fn get_next_external_user_id(&self) -> u64 {
+        let mut counter = self.external_user_id_counter.write();
+        *counter += 1;
+        *counter
     }
 
     pub fn process_message(&self, message: SbeMessage) -> Result<Vec<MarketDataUpdate>, BridgeError> {
@@ -137,7 +125,7 @@ impl SbeBridge {
             creation_timestamp: msg.creation_timestamp_ms,
             expiration_timestamp: msg.expiration_timestamp_ms,
             strike_price: msg.strike_price,
-            is_active: msg.instrument_state != 2, // Not closed
+            is_active: msg.instrument_state != 2, 
         };
 
         info!("Registered instrument: {} (ID: {})", instrument.name, instrument.id);
@@ -170,17 +158,17 @@ impl SbeBridge {
         let mut best_ask: Option<(f64, f64)> = None;
 
         for change in &msg.changes {
-            if change.change == 2 { // Deleted
+            if change.change == 2 { 
                 continue;
             }
 
             match change.side {
-                1 => { // Bid
+                1 => { 
                     if best_bid.is_none() || change.price > best_bid.unwrap().0 {
                         best_bid = Some((change.price, change.amount));
                     }
                 }
-                0 => { // Ask
+                0 => { 
                     if best_ask.is_none() || change.price < best_ask.unwrap().0 {
                         best_ask = Some((change.price, change.amount));
                     }
@@ -271,12 +259,12 @@ impl SbeBridge {
 
         for level in &msg.levels {
             match level.side {
-                1 => { // Bid
+                1 => { 
                     if best_bid.is_none() || level.price > best_bid.unwrap().0 {
                         best_bid = Some((level.price, level.amount));
                     }
                 }
-                0 => { // Ask
+                0 => { 
                     if best_ask.is_none() || level.price < best_ask.unwrap().0 {
                         best_ask = Some((level.price, level.amount));
                     }
@@ -301,44 +289,46 @@ impl SbeBridge {
 
     fn convert_instrument_kind(&self, kind: u8) -> InstrumentKind {
         match kind {
-            0 => InstrumentKind::Future,
-            1 => InstrumentKind::Option,
-            2 => InstrumentKind::FutureCombo,
-            3 => InstrumentKind::OptionCombo,
-            4 => InstrumentKind::Spot,
-            _ => InstrumentKind::Future, // Default fallback
+            0 => InstrumentKind::future,
+            1 => InstrumentKind::option,
+            2 => InstrumentKind::future_combo,
+            3 => InstrumentKind::option_combo,
+            4 => InstrumentKind::spot,
+            _ => InstrumentKind::future, 
         }
     }
 
     fn convert_instrument_type(&self, instrument_type: u8) -> InstrumentType {
         match instrument_type {
-            0 => InstrumentType::NotApplicable,
-            1 => InstrumentType::Reversed,
-            2 => InstrumentType::Linear,
-            _ => InstrumentType::NotApplicable,
+            0 => InstrumentType::not_applicable,
+            1 => InstrumentType::reversed,
+            2 => InstrumentType::linear,
+            _ => InstrumentType::not_applicable,
         }
     }
 
     fn convert_option_type(&self, option_type: u8) -> OptionType {
         match option_type {
-            0 => OptionType::NotApplicable,
-            1 => OptionType::Call,
-            2 => OptionType::Put,
-            _ => OptionType::NotApplicable,
+            0 => OptionType::not_applicable,
+            1 => OptionType::call,
+            2 => OptionType::put,
+            _ => OptionType::not_applicable,
         }
     }
 
     pub fn convert_sbe_trade_to_internal(&self, 
         sbe_trade: &SbeTrade, 
-        instrument_id: u32,
+        _instrument_id: u32,
         trade_id: u64
     ) -> Result<Trade, BridgeError> {
-        let price_scaled = self.float_to_scaled_price(sbe_trade.price)?;
-        let quantity = (sbe_trade.amount * 1000.0) as u32; // Convert to scaled quantity
+        let price_scaled = crate::price_utils::float_to_scaled_price(sbe_trade.price)
+            .map_err(|err| BridgeError::PriceConversion(err))?;
+        let quantity = crate::price_utils::float_to_scaled_quantity(sbe_trade.amount)
+            .map_err(|err| BridgeError::PriceConversion(err))?;
 
         Ok(Trade {
             id: trade_id,
-            buy_order_id: if sbe_trade.direction == 0 { sbe_trade.trade_id } else { 0 }, // Approximate
+            buy_order_id: if sbe_trade.direction == 0 { sbe_trade.trade_id } else { 0 }, 
             sell_order_id: if sbe_trade.direction == 1 { sbe_trade.trade_id } else { 0 },
             price: price_scaled,
             quantity,
@@ -352,8 +342,8 @@ impl SbeBridge {
         order_id: u64
     ) -> Result<Order, BridgeError> {
         let side = match change.side {
-            0 => Side::Sell, // Ask
-            1 => Side::Buy,  // Bid
+            0 => Side::Sell, 
+            1 => Side::Buy,  
             _ => return Err(BridgeError::InvalidSide(change.side)),
         };
 
@@ -364,8 +354,12 @@ impl SbeBridge {
                 .clone()
         };
 
-        let price_scaled = self.float_to_scaled_price(change.price)?;
-        let quantity = (change.amount * 1000.0) as u32; // Scale amount to internal representation
+        let price_scaled = crate::price_utils::float_to_scaled_price(change.price)
+            .map_err(|err| BridgeError::PriceConversion(err))?;
+        let quantity = crate::price_utils::float_to_scaled_quantity(change.amount)
+            .map_err(|err| BridgeError::PriceConversion(err))?;
+
+        let external_user_id = self.get_next_external_user_id();
 
         Ok(Order {
             id: order_id,
@@ -376,29 +370,16 @@ impl SbeBridge {
             quantity,
             filled_quantity: 0,
             status: OrderStatus::New,
-            timestamp: chrono::Utc::now().timestamp_millis(),
-            user_id: 0, // External order
+            timestamp: Order::get_nano_timestamp(), 
+            user_id: external_user_id, 
             time_in_force: TimeInForce::GTC,
+            expiration_time: 0, 
             stop_price: None,
-            iceberg_visible_quantity: None,
-            iceberg_peak_size: None,
-            parent_order_id: None,
-            group_id: None,
-            strategy_id: None,
-            client_order_id: None,
+            display_quantity: Some(quantity), 
         })
     }
 
-    fn float_to_scaled_price(&self, price: f64) -> Result<u64, BridgeError> {
-        if price < 0.0 || !price.is_finite() {
-            return Err(BridgeError::PriceConversion(format!("Invalid price: {}", price)));
-        }
-        Ok((price * self.price_scale as f64) as u64)
-    }
-
-    fn scaled_price_to_float(&self, price: u64) -> f64 {
-        price as f64 / self.price_scale as f64
-    }
+    
 
     pub fn get_instrument(&self, instrument_id: u32) -> Option<DeribitInstrument> {
         let instruments = self.instruments.read();
@@ -420,20 +401,25 @@ impl SbeBridge {
 
     pub fn update_orderbook_from_market_data(
         &self,
-        orderbook: &mut OrderBook,
+        _orderbook: &mut OrderBook,
         update: &MarketDataUpdate
     ) -> Result<(), BridgeError> {
         debug!("Updating orderbook for {} with market data", update.symbol);
 
         if let Some((bid_price, bid_amount)) = update.best_bid {
-            let price_scaled = self.float_to_scaled_price(bid_price)?;
-            let quantity = (bid_amount * 1000.0) as u32;
+            let _price_scaled = crate::price_utils::float_to_scaled_price(bid_price)
+                .map_err(|err| BridgeError::PriceConversion(err))?;
+            let _quantity = crate::price_utils::float_to_scaled_quantity(bid_amount)
+                .map_err(|err| BridgeError::PriceConversion(err))?;
             
         }
 
         if let Some((ask_price, ask_amount)) = update.best_ask {
-            let price_scaled = self.float_to_scaled_price(ask_price)?;
-            let quantity = (ask_amount * 1000.0) as u32;
+            let _price_scaled = crate::price_utils::float_to_scaled_price(ask_price)
+                .map_err(|err| BridgeError::PriceConversion(err))?;
+            let _quantity = crate::price_utils::float_to_scaled_quantity(ask_amount)
+                .map_err(|err| BridgeError::PriceConversion(err))?;
+            
         }
 
         Ok(())
@@ -442,6 +428,6 @@ impl SbeBridge {
 
 impl Default for SbeBridge {
     fn default() -> Self {
-        Self::new(1_000_000) // Default to 6 decimal places for crypto
+        Self::new(PRICE_SCALE_FACTOR) 
     }
 }

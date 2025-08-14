@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 
 pub use encoder::*;
 pub use decoder::*;
@@ -63,21 +63,21 @@ pub mod encoder {
             header
         }
 
-        /// primitive field 'instrumentId'
-        /// - min value: 0
-        /// - max value: 4294967294
-        /// - null value: 4294967295
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 4
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn instrument_id(&mut self, value: u32) {
             let offset = self.offset;
             self.get_buf_mut().put_u32_at(offset, value);
         }
 
-        /// GROUP ENCODER
+        
         #[inline]
         pub fn trades_list_encoder(self, count: u16, trades_list_encoder: TradesListEncoder<Self>) -> TradesListEncoder<Self> {
             trades_list_encoder.wrap(self, count)
@@ -146,7 +146,7 @@ pub mod encoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// will return Some(current index) when successful otherwise None
+        
         #[inline]
         pub fn advance(&mut self) -> SbeResult<Option<usize>> {
             let index = self.index.wrapping_add(1);
@@ -163,161 +163,161 @@ pub mod encoder {
             }
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn direction(&mut self, value: Direction) {
             let offset = self.offset;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// primitive field 'price'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 1
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn price(&mut self, value: f64) {
             let offset = self.offset + 1;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'amount'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 9
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn amount(&mut self, value: f64) {
             let offset = self.offset + 9;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'timestampMs'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 17
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn timestamp_ms(&mut self, value: u64) {
             let offset = self.offset + 17;
             self.get_buf_mut().put_u64_at(offset, value);
         }
 
-        /// primitive field 'markPrice'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 25
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn mark_price(&mut self, value: f64) {
             let offset = self.offset + 25;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'indexPrice'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 33
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn index_price(&mut self, value: f64) {
             let offset = self.offset + 33;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'tradeSeq'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 41
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn trade_seq(&mut self, value: u64) {
             let offset = self.offset + 41;
             self.get_buf_mut().put_u64_at(offset, value);
         }
 
-        /// primitive field 'tradeId'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 49
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn trade_id(&mut self, value: u64) {
             let offset = self.offset + 49;
             self.get_buf_mut().put_u64_at(offset, value);
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn tick_direction(&mut self, value: TickDirection) {
             let offset = self.offset + 57;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn liquidation(&mut self, value: Liquidation) {
             let offset = self.offset + 58;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// primitive field 'iv'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 59
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn iv(&mut self, value: f64) {
             let offset = self.offset + 59;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'blockTradeId'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 67
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn block_trade_id(&mut self, value: u64) {
             let offset = self.offset + 67;
             self.get_buf_mut().put_u64_at(offset, value);
         }
 
-        /// primitive field 'comboTradeId'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 75
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn combo_trade_id(&mut self, value: u64) {
             let offset = self.offset + 75;
@@ -326,7 +326,7 @@ pub mod encoder {
 
     }
 
-} // end encoder
+} 
 
 pub mod decoder {
     use super::*;
@@ -396,13 +396,13 @@ pub mod decoder {
             )
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn instrument_id(&self) -> u32 {
             self.get_buf().get_u32_at(self.offset)
         }
 
-        /// GROUP DECODER
+        
         #[inline]
         pub fn trades_list_decoder(self) -> TradesListDecoder<Self> {
             let acting_version = self.acting_version;
@@ -459,7 +459,7 @@ pub mod decoder {
             self
         }
 
-        /// group token - Token{signal=BEGIN_GROUP, name='tradesList', referencedName='null', description='null', packageName='null', id=2, version=0, deprecated=0, encodedLength=83, offset=4, componentTokenCount=60, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        
         #[inline]
         pub fn parent(&mut self) -> SbeResult<P> {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
@@ -470,7 +470,7 @@ pub mod decoder {
             self.count
         }
 
-        /// will return Some(current index) when successful otherwise None
+        
         pub fn advance(&mut self) -> SbeResult<Option<usize>> {
             let index = self.index.wrapping_add(1);
             if index >= self.count as usize {
@@ -486,67 +486,67 @@ pub mod decoder {
             }
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn direction(&self) -> Direction {
             self.get_buf().get_u8_at(self.offset).into()
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn price(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 1)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn amount(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 9)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn timestamp_ms(&self) -> u64 {
             self.get_buf().get_u64_at(self.offset + 17)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn mark_price(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 25)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn index_price(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 33)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn trade_seq(&self) -> u64 {
             self.get_buf().get_u64_at(self.offset + 41)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn trade_id(&self) -> u64 {
             self.get_buf().get_u64_at(self.offset + 49)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn tick_direction(&self) -> TickDirection {
             self.get_buf().get_u8_at(self.offset + 57).into()
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn liquidation(&self) -> Liquidation {
             self.get_buf().get_u8_at(self.offset + 58).into()
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: 'NaN' }
+        
         #[inline]
         pub fn iv(&self) -> Option<f64> {
             let value = self.get_buf().get_f64_at(self.offset + 59);
@@ -557,7 +557,7 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: '-1' }
+        
         #[inline]
         pub fn block_trade_id(&self) -> Option<u64> {
             let value = self.get_buf().get_u64_at(self.offset + 67);
@@ -568,7 +568,7 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: '-1' }
+        
         #[inline]
         pub fn combo_trade_id(&self) -> Option<u64> {
             let value = self.get_buf().get_u64_at(self.offset + 75);
@@ -581,5 +581,5 @@ pub mod decoder {
 
     }
 
-} // end decoder
+} 
 

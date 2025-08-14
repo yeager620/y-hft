@@ -5,17 +5,17 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct StandardHeader {
-    pub begin_string: String,     // Tag 8
-    pub body_length: u32,         // Tag 9
-    pub msg_type: MessageType,    // Tag 35
-    pub sender_comp_id: String,   // Tag 49
-    pub target_comp_id: String,   // Tag 56
-    pub msg_seq_num: u32,         // Tag 34
-    pub sending_time: String,     // Tag 52 - TODO: Use proper datetime type
-    pub poss_dup_flag: Option<bool>, // Tag 43
-    pub poss_resend: Option<bool>,   // Tag 97
-    pub secure_data_len: Option<u32>, // Tag 90
-    pub secure_data: Option<Vec<u8>>, // Tag 91
+    pub begin_string: String,     
+    pub body_length: u32,         
+    pub msg_type: MessageType,    
+    pub sender_comp_id: String,   
+    pub target_comp_id: String,   
+    pub msg_seq_num: u32,         
+    pub sending_time: String,     
+    pub poss_dup_flag: Option<bool>, 
+    pub poss_resend: Option<bool>,   
+    pub secure_data_len: Option<u32>, 
+    pub secure_data: Option<Vec<u8>>, 
 }
 
 pub struct Header;

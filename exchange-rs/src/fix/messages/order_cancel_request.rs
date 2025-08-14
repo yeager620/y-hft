@@ -6,14 +6,14 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct OrderCancelRequest {
     pub header: StandardHeader,
-    pub orig_cl_ord_id: String,      // Tag 41
-    pub cl_ord_id: String,           // Tag 11
-    pub symbol: String,              // Tag 55
-    pub side: char,                  // Tag 54
-    pub transact_time: String,       // Tag 60
-    pub order_qty: Option<u32>,      // Tag 38
-    pub account: Option<String>,     // Tag 1
-    pub text: Option<String>,        // Tag 58
+    pub orig_cl_ord_id: String,      
+    pub cl_ord_id: String,           
+    pub symbol: String,              
+    pub side: char,                  
+    pub transact_time: String,       
+    pub order_qty: Option<u32>,      
+    pub account: Option<String>,     
+    pub text: Option<String>,        
     pub trailer: Trailer,
 }
 

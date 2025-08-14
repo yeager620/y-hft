@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
 pub struct Trailer {
-    pub checksum: u8, // Tag 10
+    pub checksum: u8, 
 }
 
 impl Trailer {
@@ -17,7 +17,7 @@ impl Trailer {
     }
 
     pub fn validate(&self) -> Result<(), ValidationError> {
-        // Checksum is validated during parsing, so this is mostly a placeholder
+        
         Ok(())
     }
 }

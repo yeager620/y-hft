@@ -2,6 +2,8 @@ use crate::fix::error::{FixError, BusinessError};
 use crate::fix::messages::NewOrderSingle;
 use crate::order::{Order, OrderType, Side, TimeInForce};
 
+const PRICE_SCALE_FACTOR: u64 = 1_000_000;
+
 pub struct FixOrderConverter;
 
 impl FixOrderConverter {
@@ -78,11 +80,10 @@ impl FixOrderConverter {
                 match fix_price {
                     Some(price) => {
                         if price <= 0.0 || !price.is_finite() {
-                            return Err(BusinessError::InvalidPrice {
-                                price: (price * 10000.0) as u64,
-                            });
+                            Err(BusinessError::InvalidPrice { price: 0 })
+                        } else {
+                            Ok((price * PRICE_SCALE_FACTOR as f64) as u64)
                         }
-                        Ok((price * 10000.0) as u64)
                     }
                     None => Err(BusinessError::InvalidPrice { price: 0 }),
                 }
@@ -97,11 +98,10 @@ impl FixOrderConverter {
                 match fix_stop_px {
                     Some(price) => {
                         if price <= 0.0 || !price.is_finite() {
-                            return Err(BusinessError::InvalidPrice {
-                                price: (price * 10000.0) as u64,
-                            });
+                            Err(BusinessError::InvalidPrice { price: 0 })
+                        } else {
+                            Ok(Some((price * PRICE_SCALE_FACTOR as f64) as u64))
                         }
-                        Ok(Some((price * 10000.0) as u64))
                     }
                     None => Err(BusinessError::InvalidPrice { price: 0 }),
                 }
@@ -174,7 +174,7 @@ mod tests {
         assert_eq!(order.side, Side::Buy);
         assert_eq!(order.order_type, OrderType::Limit);
         assert_eq!(order.quantity, 100);
-        assert_eq!(order.price, 1505000); // 150.50 * 10000
+        assert_eq!(order.price, 1505000); 
         assert_eq!(order.time_in_force, TimeInForce::GTC);
         assert_eq!(order.stop_price, None);
     }
@@ -222,8 +222,8 @@ mod tests {
         assert_eq!(order.side, Side::Sell);
         assert_eq!(order.order_type, OrderType::StopLimit);
         assert_eq!(order.quantity, 50);
-        assert_eq!(order.price, 2000000); // 200.00 * 10000
-        assert_eq!(order.stop_price, Some(1950000)); // 195.00 * 10000
+        assert_eq!(order.price, 2000000); 
+        assert_eq!(order.stop_price, Some(1950000)); 
         assert_eq!(order.time_in_force, TimeInForce::FOK);
     }
 }

@@ -28,13 +28,13 @@ fn test_convert_limit_buy_order() {
         account: None,
         handl_inst: '1',
         symbol: "AAPL".to_string(),
-        side: '1', // Buy
+        side: '1', 
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 100,
-        ord_type: '2', // Limit
+        ord_type: '2', 
         price: Some(150.50),
         stop_px: None,
-        time_in_force: Some('1'), // GTC
+        time_in_force: Some('1'), 
         exec_inst: None,
         trailer,
     };
@@ -45,7 +45,7 @@ fn test_convert_limit_buy_order() {
     assert_eq!(order.side, Side::Buy);
     assert_eq!(order.order_type, OrderType::Limit);
     assert_eq!(order.quantity, 100);
-    assert_eq!(order.price, 1505000); // 150.50 * 10000
+    assert_eq!(order.price, 1505000); 
     assert_eq!(order.time_in_force, TimeInForce::GTC);
     assert_eq!(order.stop_price, None);
 }
@@ -76,13 +76,13 @@ fn test_convert_market_sell_order() {
         account: Some("ACCOUNT456".to_string()),
         handl_inst: '1',
         symbol: "GOOGL".to_string(),
-        side: '2', // Sell
+        side: '2', 
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 50,
-        ord_type: '1', // Market
+        ord_type: '1', 
         price: None,
         stop_px: None,
-        time_in_force: Some('3'), // IOC
+        time_in_force: Some('3'), 
         exec_inst: None,
         trailer,
     };
@@ -93,10 +93,10 @@ fn test_convert_market_sell_order() {
     assert_eq!(order.side, Side::Sell);
     assert_eq!(order.order_type, OrderType::Market);
     assert_eq!(order.quantity, 50);
-    assert_eq!(order.price, 0); // Market orders have no price
+    assert_eq!(order.price, 0); 
     assert_eq!(order.time_in_force, TimeInForce::IOC);
     assert_eq!(order.stop_price, None);
-    assert_eq!(order.user_id, 456); // Extracted from account
+    assert_eq!(order.user_id, 456); 
 }
 
 #[test]
@@ -125,13 +125,13 @@ fn test_convert_stop_limit_order() {
         account: None,
         handl_inst: '1',
         symbol: "TSLA".to_string(),
-        side: '2', // Sell
+        side: '2', 
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 25,
-        ord_type: '4', // Stop Limit
+        ord_type: '4', 
         price: Some(200.00),
         stop_px: Some(195.00),
-        time_in_force: Some('4'), // FOK
+        time_in_force: Some('4'), 
         exec_inst: None,
         trailer,
     };
@@ -142,10 +142,10 @@ fn test_convert_stop_limit_order() {
     assert_eq!(order.side, Side::Sell);
     assert_eq!(order.order_type, OrderType::StopLimit);
     assert_eq!(order.quantity, 25);
-    assert_eq!(order.price, 2000000); // 200.00 * 10000
-    assert_eq!(order.stop_price, Some(1950000)); // 195.00 * 10000
+    assert_eq!(order.price, 2000000); 
+    assert_eq!(order.stop_price, Some(1950000)); 
     assert_eq!(order.time_in_force, TimeInForce::FOK);
-    assert_eq!(order.user_id, 789); // Extracted from sender_comp_id
+    assert_eq!(order.user_id, 789); 
 }
 
 #[test]
@@ -174,13 +174,13 @@ fn test_convert_stop_market_order() {
         account: None,
         handl_inst: '1',
         symbol: "NVDA".to_string(),
-        side: '1', // Buy
+        side: '1', 
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 75,
-        ord_type: '3', // Stop Market
+        ord_type: '3', 
         price: None,
         stop_px: Some(500.00),
-        time_in_force: Some('0'), // Day
+        time_in_force: Some('0'), 
         exec_inst: None,
         trailer,
     };
@@ -191,10 +191,10 @@ fn test_convert_stop_market_order() {
     assert_eq!(order.side, Side::Buy);
     assert_eq!(order.order_type, OrderType::StopMarket);
     assert_eq!(order.quantity, 75);
-    assert_eq!(order.price, 0); // Stop market orders have no limit price
-    assert_eq!(order.stop_price, Some(5000000)); // 500.00 * 10000
+    assert_eq!(order.price, 0); 
+    assert_eq!(order.stop_price, Some(5000000)); 
     assert_eq!(order.time_in_force, TimeInForce::Day);
-    assert_eq!(order.user_id, 101); // Extracted from sender_comp_id
+    assert_eq!(order.user_id, 101); 
 }
 
 #[test]
@@ -226,7 +226,7 @@ fn test_invalid_order_type() {
         side: '1',
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 100,
-        ord_type: 'X', // Invalid order type
+        ord_type: 'X', 
         price: Some(100.00),
         stop_px: None,
         time_in_force: Some('1'),
@@ -267,8 +267,8 @@ fn test_missing_price_for_limit_order() {
         side: '1',
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 100,
-        ord_type: '2', // Limit order
-        price: None,   // Missing price
+        ord_type: '2', 
+        price: None,   
         stop_px: None,
         time_in_force: Some('1'),
         exec_inst: None,
@@ -308,9 +308,9 @@ fn test_missing_stop_price_for_stop_order() {
         side: '2',
         transact_time: "20240101-12:00:00".to_string(),
         order_qty: 10,
-        ord_type: '3', // Stop market order
+        ord_type: '3', 
         price: None,
-        stop_px: None, // Missing stop price
+        stop_px: None, 
         time_in_force: Some('1'),
         exec_inst: None,
         trailer,

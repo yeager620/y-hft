@@ -6,14 +6,14 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct Logon {
     pub header: StandardHeader,
-    pub encrypt_method: char,       // Tag 98
-    pub heart_bt_int: u32,         // Tag 108
-    pub raw_data_length: Option<u32>, // Tag 95
-    pub raw_data: Option<Vec<u8>>, // Tag 96
-    pub reset_seq_num_flag: Option<bool>, // Tag 141
-    pub next_expected_msg_seq_num: Option<u32>, // Tag 789
-    pub username: Option<String>,   // Tag 553
-    pub password: Option<String>,   // Tag 554
+    pub encrypt_method: char,       
+    pub heart_bt_int: u32,         
+    pub raw_data_length: Option<u32>, 
+    pub raw_data: Option<Vec<u8>>, 
+    pub reset_seq_num_flag: Option<bool>, 
+    pub next_expected_msg_seq_num: Option<u32>, 
+    pub username: Option<String>,   
+    pub password: Option<String>,   
     pub trailer: Trailer,
 }
 

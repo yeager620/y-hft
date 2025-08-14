@@ -34,6 +34,18 @@ pub enum ParseError {
     
     #[error("Invalid field value for tag {tag}: {value}")]
     InvalidFieldValue { tag: u32, value: String },
+    
+    #[error("Message too large: {size} bytes exceeds limit {limit}")]
+    MessageTooLarge { size: usize, limit: usize },
+    
+    #[error("Invalid character at position {position}: 0x{byte:02x}")]
+    InvalidCharacter { position: usize, byte: u8 },
+    
+    #[error("Truncated message: expected {expected} bytes, got {actual}")]
+    TruncatedMessage { expected: usize, actual: usize },
+    
+    #[error("Invalid repeating group: {reason}")]
+    InvalidRepeatingGroup { reason: String },
 }
 
 #[derive(Error, Debug, Clone)]
@@ -52,6 +64,18 @@ pub enum ValidationError {
     
     #[error("Invalid field value for tag {tag}: {value}")]
     InvalidFieldValue { tag: u32, value: String },
+    
+    #[error("Conditional field missing: tag {tag} required when {condition}")]
+    ConditionalFieldMissing { tag: u32, condition: String },
+    
+    #[error("Field ordering violation: tag {tag} appears after {after_tag}")]
+    FieldOrderingViolation { tag: u32, after_tag: u32 },
+    
+    #[error("Repeating group validation failed: {reason}")]
+    RepeatingGroupValidation { reason: String },
+    
+    #[error("Data type mismatch for tag {tag}: expected {expected}, got {actual}")]
+    DataTypeMismatch { tag: u32, expected: String, actual: String },
 }
 
 #[derive(Error, Debug, Clone)]
@@ -88,4 +112,16 @@ pub enum BusinessError {
     
     #[error("Order not found: {cl_ord_id}")]
     OrderNotFound { cl_ord_id: String },
+    
+    #[error("Market closed for symbol: {symbol}")]
+    MarketClosed { symbol: String },
+    
+    #[error("Insufficient balance: required {required}, available {available}")]
+    InsufficientBalance { required: f64, available: f64 },
+    
+    #[error("Trading halt for symbol: {symbol}")]
+    TradingHalt { symbol: String },
+    
+    #[error("Position limit exceeded: {limit}")]
+    PositionLimitExceeded { limit: u32 },
 }

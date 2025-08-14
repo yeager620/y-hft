@@ -6,7 +6,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct Heartbeat {
     pub header: StandardHeader,
-    pub test_req_id: Option<String>, // Tag 112
+    pub test_req_id: Option<String>, 
     pub trailer: Trailer,
 }
 

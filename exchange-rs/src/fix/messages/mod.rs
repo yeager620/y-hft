@@ -29,51 +29,51 @@ pub enum FixMessage {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MessageType {
-    Heartbeat,              // 0
-    TestRequest,           // 1
-    ResendRequest,         // 2
-    Reject,                // 3
-    SequenceReset,         // 4
-    Logout,                // 5
-    IOI,                   // 6
-    Advertisement,         // 7
-    ExecutionReport,       // 8
-    OrderCancelReject,     // 9
-    Logon,                 // A
-    News,                  // B
-    Email,                 // C
-    NewOrderSingle,        // D
-    OrderCancelRequest,    // F
-    OrderCancelReplaceRequest, // G
-    OrderStatusRequest,    // H
-    Allocation,            // J
-    ListCancelRequest,     // K
-    ListExecute,           // L
-    ListStatusRequest,     // M
-    ListStatus,            // N
-    AllocationAck,         // P
-    DontKnowTrade,         // Q
-    QuoteRequest,          // R
-    Quote,                 // S
-    SettlementInstructions, // T
-    MarketDataRequest,     // V
-    MarketDataSnapshotFullRefresh, // W
-    MarketDataIncrementalRefresh, // X
-    MarketDataRequestReject, // Y
-    QuoteCancel,           // Z
-    QuoteStatusRequest,    // a
-    QuoteAcknowledgement,  // b
-    SecurityDefinitionRequest, // c
-    SecurityDefinition,    // d
-    SecurityStatusRequest, // e
-    SecurityStatus,        // f
-    TradingSessionStatusRequest, // g
-    TradingSessionStatus,  // h
-    MassQuote,             // i
-    BusinessMessageReject, // j
-    BidRequest,            // k
-    BidResponse,           // l
-    ListStrikePrice,       // m
+    Heartbeat,              
+    TestRequest,           
+    ResendRequest,         
+    Reject,                
+    SequenceReset,         
+    Logout,                
+    IOI,                   
+    Advertisement,         
+    ExecutionReport,       
+    OrderCancelReject,     
+    Logon,                 
+    News,                  
+    Email,                 
+    NewOrderSingle,        
+    OrderCancelRequest,    
+    OrderCancelReplaceRequest, 
+    OrderStatusRequest,    
+    Allocation,            
+    ListCancelRequest,     
+    ListExecute,           
+    ListStatusRequest,     
+    ListStatus,            
+    AllocationAck,         
+    DontKnowTrade,         
+    QuoteRequest,          
+    Quote,                 
+    SettlementInstructions, 
+    MarketDataRequest,     
+    MarketDataSnapshotFullRefresh, 
+    MarketDataIncrementalRefresh, 
+    MarketDataRequestReject, 
+    QuoteCancel,           
+    QuoteStatusRequest,    
+    QuoteAcknowledgement,  
+    SecurityDefinitionRequest, 
+    SecurityDefinition,    
+    SecurityStatusRequest, 
+    SecurityStatus,        
+    TradingSessionStatusRequest, 
+    TradingSessionStatus,  
+    MassQuote,             
+    BusinessMessageReject, 
+    BidRequest,            
+    BidResponse,           
+    ListStrikePrice,       
 }
 
 impl MessageType {

@@ -18,7 +18,7 @@ use exchange_rs::optimizations::OptimizationConfig;
 async fn test_sbe_bridge_market_data_conversion() {
     let bridge = SbeBridge::default();
     
-    // Test book update processing
+    
     let book_message = SbeMessage::Book(BookMessage {
         instrument_id: 123,
         timestamp_ms: 1640995200000,
@@ -27,14 +27,14 @@ async fn test_sbe_bridge_market_data_conversion() {
         is_last: true,
         changes: vec![
             BookChange {
-                side: 1, // Bid
-                change: 1, // Changed
+                side: 1, 
+                change: 1, 
                 price: 50000.0,
                 amount: 1.5,
             },
             BookChange {
-                side: 0, // Ask
-                change: 0, // Created
+                side: 0, 
+                change: 0, 
                 price: 50100.0,
                 amount: 2.0,
             }
@@ -59,7 +59,7 @@ async fn test_sbe_bridge_trades_processing() {
         instrument_id: 456,
         trades: vec![
             Trade {
-                direction: 0, // Buy
+                direction: 0, 
                 price: 49950.0,
                 amount: 0.5,
                 timestamp_ms: 1640995200500,
@@ -67,8 +67,8 @@ async fn test_sbe_bridge_trades_processing() {
                 index_price: 49955.0,
                 trade_seq: 12345,
                 trade_id: 67890,
-                tick_direction: 0, // Plus
-                liquidation: 0, // None
+                tick_direction: 0, 
+                liquidation: 0, 
                 iv: None,
                 block_trade_id: None,
                 combo_trade_id: None,
@@ -92,7 +92,7 @@ async fn test_sbe_bridge_ticker_processing() {
     
     let ticker_message = SbeMessage::Ticker(TickerMessage {
         instrument_id: 789,
-        instrument_state: 1, // Open
+        instrument_state: 1, 
         timestamp_ms: 1640995201000,
         open_interest: Some(1000.0),
         min_sell_price: 40000.0,
@@ -132,8 +132,8 @@ async fn test_deribit_integration_creation_and_setup() {
         Arc::clone(&latency_metrics)
     );
     
-    // Test that integration can be created
-    assert!(integration.list_instruments().is_empty()); // No instruments initially
+    
+    assert!(integration.list_instruments().is_empty()); 
 }
 
 #[tokio::test]
@@ -144,7 +144,7 @@ async fn test_market_data_feed_subscription() {
     
     let mut feed = DeribitMarketDataFeed::new(matching_engine, latency_metrics);
     
-    // Test subscribing to instruments
+    
     let result = feed.subscribe_to_instrument("BTC-PERPETUAL".to_string()).await;
     assert!(result.is_ok());
     
@@ -160,10 +160,10 @@ async fn test_external_order_generation() {
     
     let mut integration = DeribitExchangeIntegration::new(matching_engine, latency_metrics);
     
-    // Add an instrument orderbook
+    
     integration.add_instrument_orderbook("BTC-PERPETUAL".to_string()).unwrap();
     
-    // Create a market data update
+    
     let update = MarketDataUpdate {
         instrument_id: 1,
         symbol: "BTC-PERPETUAL".to_string(),
@@ -175,7 +175,7 @@ async fn test_external_order_generation() {
         index_price: Some(50048.0),
     };
     
-    // Process the update - this should generate synthetic orders
+    
     let result = integration.process_market_data_update(update).await;
     assert!(result.is_ok());
 }
@@ -184,7 +184,7 @@ async fn test_external_order_generation() {
 async fn test_multicast_config_creation() {
     use exchange_rs::sbe::multicast::deribit;
     
-    // Test that we can create various multicast configurations
+    
     let btc_config = deribit::btc_perpetual_config();
     assert_eq!(btc_config.port, 10001);
     
@@ -200,9 +200,9 @@ async fn test_multicast_config_creation() {
 
 #[tokio::test]
 async fn test_price_scaling_conversion() {
-    let bridge = SbeBridge::new(1_000_000); // 6 decimal places
+    let bridge = SbeBridge::new(1_000_000); 
     
-    // Test price conversion methods (accessing through market data processing)
+    
     let update = MarketDataUpdate {
         instrument_id: 1,
         symbol: "TEST-INSTRUMENT".to_string(),
@@ -214,7 +214,7 @@ async fn test_price_scaling_conversion() {
         index_price: None,
     };
     
-    // Process should handle price scaling correctly
+    
     let result = bridge.process_message(SbeMessage::Ticker(TickerMessage {
         instrument_id: 1,
         instrument_state: 1,
@@ -245,9 +245,9 @@ async fn test_price_scaling_conversion() {
 async fn test_error_handling() {
     let bridge = SbeBridge::default();
     
-    // Test handling of invalid instrument IDs
+    
     let book_message = SbeMessage::Book(BookMessage {
-        instrument_id: 99999, // Unknown instrument
+        instrument_id: 99999, 
         timestamp_ms: 1640995200000,
         prev_change_id: 100,
         change_id: 101,
@@ -255,9 +255,9 @@ async fn test_error_handling() {
         changes: vec![],
     });
     
-    // Should handle gracefully (creating unknown instrument error or handling it)
+    
     let result = bridge.process_message(book_message);
-    // Depending on implementation, this might be ok (empty updates) or error
+    
     assert!(result.is_ok() || result.is_err());
 }
 
@@ -272,7 +272,7 @@ async fn test_concurrent_market_data_processing() {
         latency_metrics
     ));
     
-    // Simulate concurrent market data updates
+    
     let mut handles = vec![];
     
     for i in 0..10 {
@@ -294,7 +294,7 @@ async fn test_concurrent_market_data_processing() {
         handles.push(handle);
     }
     
-    // Wait for all tasks to complete
+    
     for handle in handles {
         let result = handle.await;
         assert!(result.is_ok());
@@ -306,28 +306,28 @@ async fn test_concurrent_market_data_processing() {
 async fn test_sbe_parser_message_types() {
     let parser = SbeMessageParser::new();
     
-    // Test that parser handles different message template IDs
-    // Note: These are mock tests - real SBE messages would need proper binary format
     
-    // We can't easily test the parser without real SBE binary data
-    // but we can test that the parser exists and has the expected interface
-    assert_eq!(std::mem::size_of_val(&parser), 0); // Zero-sized struct
+    
+    
+    
+    
+    assert_eq!(std::mem::size_of_val(&parser), 0); 
 }
 
-// Integration test for the complete flow
+
 #[tokio::test]
 async fn test_end_to_end_market_data_flow() {
     let config = OptimizationConfig::default();
     let matching_engine = Arc::new(RwLock::new(MatchingEngine::new(config)));
     let latency_metrics = Arc::new(LatencyMetrics::new());
     
-    // Create the integration
+    
     let mut integration = DeribitExchangeIntegration::new(matching_engine, latency_metrics);
     
-    // Add a test instrument
+    
     integration.add_instrument_orderbook("BTC-PERPETUAL".to_string()).unwrap();
     
-    // Create test market data
+    
     let update = MarketDataUpdate {
         instrument_id: 1,
         symbol: "BTC-PERPETUAL".to_string(),
@@ -339,14 +339,14 @@ async fn test_end_to_end_market_data_flow() {
         index_price: Some(50048.0),
     };
     
-    // Process the market data
+    
     let result = integration.process_market_data_update(update).await;
     assert!(result.is_ok());
     
-    // Verify that the matching engine state was updated
+    
     let engine = integration.matching_engine.read();
-    // Check that the symbol was added (basic validation)
-    // More detailed checks would depend on MatchingEngine's public interface
+    
+    
 }
 
 #[cfg(test)]
@@ -358,7 +358,7 @@ mod performance_tests {
     async fn test_market_data_processing_latency() {
         let bridge = SbeBridge::default();
         
-        // Create a batch of market updates
+        
         let mut updates = Vec::new();
         for i in 0..1000 {
             let ticker_message = SbeMessage::Ticker(TickerMessage {
@@ -384,7 +384,7 @@ mod performance_tests {
             updates.push(ticker_message);
         }
         
-        // Measure processing time
+        
         let start = Instant::now();
         
         for update in updates {
@@ -395,7 +395,7 @@ mod performance_tests {
         println!("Processed 1000 market updates in {:?}", duration);
         println!("Average per update: {:?}", duration / 1000);
         
-        // Assert that processing is reasonably fast (adjust threshold as needed)
-        assert!(duration.as_micros() < 100_000); // Less than 100ms total
+        
+        assert!(duration.as_micros() < 100_000); 
     }
 }

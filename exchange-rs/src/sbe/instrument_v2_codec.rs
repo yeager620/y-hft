@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 
 pub use encoder::*;
 pub use decoder::*;
@@ -63,78 +63,78 @@ pub mod encoder {
             header
         }
 
-        /// primitive field 'instrumentId'
-        /// - min value: 0
-        /// - max value: 4294967294
-        /// - null value: 4294967295
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 4
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn instrument_id(&mut self, value: u32) {
             let offset = self.offset;
             self.get_buf_mut().put_u32_at(offset, value);
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn instrument_state(&mut self, value: InstrumentState) {
             let offset = self.offset + 4;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn kind(&mut self, value: InstrumentKind) {
             let offset = self.offset + 5;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn instrument_type(&mut self, value: InstrumentType) {
             let offset = self.offset + 6;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn option_type(&mut self, value: OptionType) {
             let offset = self.offset + 7;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn settlement_period(&mut self, value: Period) {
             let offset = self.offset + 8;
             self.get_buf_mut().put_u8_at(offset, value as u8)
         }
 
-        /// primitive field 'settlementPeriodCount'
-        /// - min value: 0
-        /// - max value: 65534
-        /// - null value: 65535
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 9
-        /// - encodedLength: 2
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn settlement_period_count(&mut self, value: u16) {
             let offset = self.offset + 9;
             self.get_buf_mut().put_u16_at(offset, value);
         }
 
-        /// primitive array field 'baseCurrency'
-        /// - min value: 32
-        /// - max value: 126
-        /// - null value: 0
-        /// - characterEncoding: US-ASCII
-        /// - semanticType: null
-        /// - encodedOffset: 11
-        /// - encodedLength: 8
-        /// - version: 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn base_currency(&mut self, value: [u8; 8]) {
             let offset = self.offset + 11;
@@ -149,15 +149,15 @@ pub mod encoder {
             buf.put_u8_at(offset + 7, value[7]);
         }
 
-        /// primitive array field 'quoteCurrency'
-        /// - min value: 32
-        /// - max value: 126
-        /// - null value: 0
-        /// - characterEncoding: US-ASCII
-        /// - semanticType: null
-        /// - encodedOffset: 19
-        /// - encodedLength: 8
-        /// - version: 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn quote_currency(&mut self, value: [u8; 8]) {
             let offset = self.offset + 19;
@@ -172,15 +172,15 @@ pub mod encoder {
             buf.put_u8_at(offset + 7, value[7]);
         }
 
-        /// primitive array field 'counterCurrency'
-        /// - min value: 32
-        /// - max value: 126
-        /// - null value: 0
-        /// - characterEncoding: US-ASCII
-        /// - semanticType: null
-        /// - encodedOffset: 27
-        /// - encodedLength: 8
-        /// - version: 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn counter_currency(&mut self, value: [u8; 8]) {
             let offset = self.offset + 27;
@@ -195,15 +195,15 @@ pub mod encoder {
             buf.put_u8_at(offset + 7, value[7]);
         }
 
-        /// primitive array field 'settlementCurrency'
-        /// - min value: 32
-        /// - max value: 126
-        /// - null value: 0
-        /// - characterEncoding: US-ASCII
-        /// - semanticType: null
-        /// - encodedOffset: 35
-        /// - encodedLength: 8
-        /// - version: 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn settlement_currency(&mut self, value: [u8; 8]) {
             let offset = self.offset + 35;
@@ -218,15 +218,15 @@ pub mod encoder {
             buf.put_u8_at(offset + 7, value[7]);
         }
 
-        /// primitive array field 'sizeCurrency'
-        /// - min value: 32
-        /// - max value: 126
-        /// - null value: 0
-        /// - characterEncoding: US-ASCII
-        /// - semanticType: null
-        /// - encodedOffset: 43
-        /// - encodedLength: 8
-        /// - version: 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn size_currency(&mut self, value: [u8; 8]) {
             let offset = self.offset + 43;
@@ -241,167 +241,167 @@ pub mod encoder {
             buf.put_u8_at(offset + 7, value[7]);
         }
 
-        /// primitive field 'creationTimestampMs'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 51
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn creation_timestamp_ms(&mut self, value: u64) {
             let offset = self.offset + 51;
             self.get_buf_mut().put_u64_at(offset, value);
         }
 
-        /// primitive field 'expirationTimestampMs'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 59
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn expiration_timestamp_ms(&mut self, value: u64) {
             let offset = self.offset + 59;
             self.get_buf_mut().put_u64_at(offset, value);
         }
 
-        /// primitive field 'strikePrice'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 67
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn strike_price(&mut self, value: f64) {
             let offset = self.offset + 67;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'contractSize'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 75
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn contract_size(&mut self, value: f64) {
             let offset = self.offset + 75;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'minTradeAmount'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 83
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn min_trade_amount(&mut self, value: f64) {
             let offset = self.offset + 83;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'tickSize'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 91
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn tick_size(&mut self, value: f64) {
             let offset = self.offset + 91;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'makerCommission'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 99
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn maker_commission(&mut self, value: f64) {
             let offset = self.offset + 99;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'takerCommission'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 107
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn taker_commission(&mut self, value: f64) {
             let offset = self.offset + 107;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'blockTradeCommission'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 115
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn block_trade_commission(&mut self, value: f64) {
             let offset = self.offset + 115;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'maxLiquidationCommission'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 123
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn max_liquidation_commission(&mut self, value: f64) {
             let offset = self.offset + 123;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'maxLeverage'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 131
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn max_leverage(&mut self, value: f64) {
             let offset = self.offset + 131;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// GROUP ENCODER
+        
         #[inline]
         pub fn tick_steps_list_encoder(self, count: u16, tick_steps_list_encoder: TickStepsListEncoder<Self>) -> TickStepsListEncoder<Self> {
             tick_steps_list_encoder.wrap(self, count)
         }
 
-        /// VAR_DATA ENCODER - character encoding: 'None'
+        
         #[inline]
         pub fn instrument_name(&mut self, value: &[u8]) {
             let limit = self.get_limit();
@@ -474,7 +474,7 @@ pub mod encoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// will return Some(current index) when successful otherwise None
+        
         #[inline]
         pub fn advance(&mut self) -> SbeResult<Option<usize>> {
             let index = self.index.wrapping_add(1);
@@ -491,28 +491,28 @@ pub mod encoder {
             }
         }
 
-        /// primitive field 'abovePrice'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn above_price(&mut self, value: f64) {
             let offset = self.offset;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'tickSize'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 8
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn tick_size(&mut self, value: f64) {
             let offset = self.offset + 8;
@@ -521,7 +521,7 @@ pub mod encoder {
 
     }
 
-} // end encoder
+} 
 
 pub mod decoder {
     use super::*;
@@ -591,43 +591,43 @@ pub mod decoder {
             )
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn instrument_id(&self) -> u32 {
             self.get_buf().get_u32_at(self.offset)
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn instrument_state(&self) -> InstrumentState {
             self.get_buf().get_u8_at(self.offset + 4).into()
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn kind(&self) -> InstrumentKind {
             self.get_buf().get_u8_at(self.offset + 5).into()
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn instrument_type(&self) -> InstrumentType {
             self.get_buf().get_u8_at(self.offset + 6).into()
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn option_type(&self) -> OptionType {
             self.get_buf().get_u8_at(self.offset + 7).into()
         }
 
-        /// REQUIRED enum
+        
         #[inline]
         pub fn settlement_period(&self) -> Period {
             self.get_buf().get_u8_at(self.offset + 8).into()
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn settlement_period_count(&self) -> u16 {
             self.get_buf().get_u16_at(self.offset + 9)
@@ -708,19 +708,19 @@ pub mod decoder {
             ]
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn creation_timestamp_ms(&self) -> u64 {
             self.get_buf().get_u64_at(self.offset + 51)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn expiration_timestamp_ms(&self) -> u64 {
             self.get_buf().get_u64_at(self.offset + 59)
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: 'NaN' }
+        
         #[inline]
         pub fn strike_price(&self) -> Option<f64> {
             let value = self.get_buf().get_f64_at(self.offset + 67);
@@ -731,37 +731,37 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn contract_size(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 75)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn min_trade_amount(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 83)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn tick_size(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 91)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn maker_commission(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 99)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn taker_commission(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 107)
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: 'NaN' }
+        
         #[inline]
         pub fn block_trade_commission(&self) -> Option<f64> {
             let value = self.get_buf().get_f64_at(self.offset + 115);
@@ -772,7 +772,7 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: 'NaN' }
+        
         #[inline]
         pub fn max_liquidation_commission(&self) -> Option<f64> {
             let value = self.get_buf().get_f64_at(self.offset + 123);
@@ -783,7 +783,7 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'OPTIONAL' { null_value: 'NaN' }
+        
         #[inline]
         pub fn max_leverage(&self) -> Option<f64> {
             let value = self.get_buf().get_f64_at(self.offset + 131);
@@ -794,14 +794,14 @@ pub mod decoder {
             }
         }
 
-        /// GROUP DECODER
+        
         #[inline]
         pub fn tick_steps_list_decoder(self) -> TickStepsListDecoder<Self> {
             let acting_version = self.acting_version;
             TickStepsListDecoder::default().wrap(self, acting_version as usize)
         }
 
-        /// VAR_DATA DECODER - character encoding: 'None'
+        
         #[inline]
         pub fn instrument_name_decoder(&mut self) -> (usize, usize) {
             let offset = self.get_limit();
@@ -866,7 +866,7 @@ pub mod decoder {
             self
         }
 
-        /// group token - Token{signal=BEGIN_GROUP, name='tickStepsList', referencedName='null', description='null', packageName='null', id=24, version=0, deprecated=0, encodedLength=16, offset=139, componentTokenCount=14, encoding=Encoding{presence=REQUIRED, primitiveType=null, byteOrder=LITTLE_ENDIAN, minValue=null, maxValue=null, nullValue=null, constValue=null, characterEncoding='null', epoch='null', timeUnit=null, semanticType='null'}}
+        
         #[inline]
         pub fn parent(&mut self) -> SbeResult<P> {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
@@ -877,7 +877,7 @@ pub mod decoder {
             self.count
         }
 
-        /// will return Some(current index) when successful otherwise None
+        
         pub fn advance(&mut self) -> SbeResult<Option<usize>> {
             let index = self.index.wrapping_add(1);
             if index >= self.count as usize {
@@ -893,13 +893,13 @@ pub mod decoder {
             }
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn above_price(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn tick_size(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 8)
@@ -907,5 +907,5 @@ pub mod decoder {
 
     }
 
-} // end decoder
+} 
 

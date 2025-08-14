@@ -6,27 +6,27 @@ use std::collections::HashMap;
 #[derive(Debug, Clone)]
 pub struct ExecutionReport {
     pub header: StandardHeader,
-    pub order_id: String,            // Tag 37
-    pub cl_ord_id: String,           // Tag 11
-    pub orig_cl_ord_id: Option<String>, // Tag 41
-    pub exec_id: String,             // Tag 17
-    pub exec_type: char,             // Tag 150
-    pub ord_status: char,            // Tag 39
-    pub account: Option<String>,     // Tag 1
-    pub symbol: String,              // Tag 55
-    pub side: char,                  // Tag 54
-    pub order_qty: u32,              // Tag 38
-    pub ord_type: char,              // Tag 40
-    pub price: Option<f64>,          // Tag 44
-    pub stop_px: Option<f64>,        // Tag 99
-    pub time_in_force: Option<char>, // Tag 59
-    pub last_qty: Option<u32>,       // Tag 32
-    pub last_px: Option<f64>,        // Tag 31
-    pub leaves_qty: u32,             // Tag 151
-    pub cum_qty: u32,                // Tag 14
-    pub avg_px: Option<f64>,         // Tag 6
-    pub transact_time: String,       // Tag 60
-    pub text: Option<String>,        // Tag 58
+    pub order_id: String,            
+    pub cl_ord_id: String,           
+    pub orig_cl_ord_id: Option<String>, 
+    pub exec_id: String,             
+    pub exec_type: char,             
+    pub ord_status: char,            
+    pub account: Option<String>,     
+    pub symbol: String,              
+    pub side: char,                  
+    pub order_qty: u32,              
+    pub ord_type: char,              
+    pub price: Option<f64>,          
+    pub stop_px: Option<f64>,        
+    pub time_in_force: Option<char>, 
+    pub last_qty: Option<u32>,       
+    pub last_px: Option<f64>,        
+    pub leaves_qty: u32,             
+    pub cum_qty: u32,                
+    pub avg_px: Option<f64>,         
+    pub transact_time: String,       
+    pub text: Option<String>,        
     pub trailer: Trailer,
 }
 
@@ -162,25 +162,25 @@ impl ExecutionReport {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExecType {
-    New,              // '0'
-    PartialFill,      // '1'
-    Fill,             // '2'
-    DoneForDay,       // '3'
-    Canceled,         // '4'
-    Replace,          // '5'
-    PendingCancel,    // '6'
-    Stopped,          // '7'
-    Rejected,         // '8'
-    Suspended,        // '9'
-    PendingNew,       // 'A'
-    Calculated,       // 'B'
-    Expired,          // 'C'
-    Restated,         // 'D'
-    PendingReplace,   // 'E'
-    Trade,            // 'F'
-    TradeCorrect,     // 'G'
-    TradeCancel,      // 'H'
-    OrderStatus,      // 'I'
+    New,              
+    PartialFill,      
+    Fill,             
+    DoneForDay,       
+    Canceled,         
+    Replace,          
+    PendingCancel,    
+    Stopped,          
+    Rejected,         
+    Suspended,        
+    PendingNew,       
+    Calculated,       
+    Expired,          
+    Restated,         
+    PendingReplace,   
+    Trade,            
+    TradeCorrect,     
+    TradeCancel,      
+    OrderStatus,      
 }
 
 impl ExecType {
@@ -236,21 +236,21 @@ impl ExecType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OrdStatus {
-    New,              // '0'
-    PartiallyFilled,  // '1'
-    Filled,           // '2'
-    DoneForDay,       // '3'
-    Canceled,         // '4'
-    Replaced,         // '5'
-    PendingCancel,    // '6'
-    Stopped,          // '7'
-    Rejected,         // '8'
-    Suspended,        // '9'
-    PendingNew,       // 'A'
-    Calculated,       // 'B'
-    Expired,          // 'C'
-    AcceptedForBidding, // 'D'
-    PendingReplace,   // 'E'
+    New,              
+    PartiallyFilled,  
+    Filled,           
+    DoneForDay,       
+    Canceled,         
+    Replaced,         
+    PendingCancel,    
+    Stopped,          
+    Rejected,         
+    Suspended,        
+    PendingNew,       
+    Calculated,       
+    Expired,          
+    AcceptedForBidding, 
+    PendingReplace,   
 }
 
 impl OrdStatus {

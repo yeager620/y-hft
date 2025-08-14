@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 use crate::sbe::{Writer, WriteBuf, Reader, ReadBuf, SbeResult, SbeErr};
 
 pub use encoder::*;
@@ -38,56 +38,56 @@ pub mod encoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// primitive field 'blockLength'
-        /// - min value: 0
-        /// - max value: 65534
-        /// - null value: 65535
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 2
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn block_length(&mut self, value: u16) {
             let offset = self.offset;
             self.get_buf_mut().put_u16_at(offset, value);
         }
 
-        /// primitive field 'numInGroup'
-        /// - min value: 0
-        /// - max value: 65534
-        /// - null value: 65535
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 2
-        /// - encodedLength: 2
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn num_in_group(&mut self, value: u16) {
             let offset = self.offset + 2;
             self.get_buf_mut().put_u16_at(offset, value);
         }
 
-        /// primitive field 'numGroups'
-        /// - min value: 0
-        /// - max value: 65534
-        /// - null value: 65535
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 4
-        /// - encodedLength: 2
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn num_groups(&mut self, value: u16) {
             let offset = self.offset + 4;
             self.get_buf_mut().put_u16_at(offset, value);
         }
 
-        /// primitive field 'numVarDataFields'
-        /// - min value: 0
-        /// - max value: 65534
-        /// - null value: 65535
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 6
-        /// - encodedLength: 2
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn num_var_data_fields(&mut self, value: u16) {
             let offset = self.offset + 6;
@@ -95,7 +95,7 @@ pub mod encoder {
         }
 
     }
-} // end encoder mod 
+} 
 
 pub mod decoder {
     use super::*;
@@ -125,29 +125,29 @@ pub mod decoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn block_length(&self) -> u16 {
             self.get_buf().get_u16_at(self.offset)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn num_in_group(&self) -> u16 {
             self.get_buf().get_u16_at(self.offset + 2)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn num_groups(&self) -> u16 {
             self.get_buf().get_u16_at(self.offset + 4)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn num_var_data_fields(&self) -> u16 {
             self.get_buf().get_u16_at(self.offset + 6)
         }
 
     }
-} // end decoder mod 
+} 

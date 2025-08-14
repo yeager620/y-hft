@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 
 pub use encoder::*;
 pub use decoder::*;
@@ -35,28 +35,28 @@ pub mod encoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// primitive field 'length'
-        /// - min value: 0
-        /// - max value: 254
-        /// - null value: 255
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 1
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn length(&mut self, value: u8) {
             let offset = self.offset;
             self.get_buf_mut().put_u8_at(offset, value);
         }
 
-        /// primitive field 'varData'
-        /// - min value: 0
-        /// - max value: 254
-        /// - null value: 255
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 1
-        /// - encodedLength: -1
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn var_data(&mut self, value: u8) {
             let offset = self.offset + 1;
@@ -64,7 +64,7 @@ pub mod encoder {
         }
 
     }
-} // end encoder mod 
+} 
 
 pub mod decoder {
     use super::*;
@@ -94,17 +94,17 @@ pub mod decoder {
             self.parent.take().ok_or(SbeErr::ParentNotSet)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn length(&self) -> u8 {
             self.get_buf().get_u8_at(self.offset)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn var_data(&self) -> u8 {
             self.get_buf().get_u8_at(self.offset + 1)
         }
 
     }
-} // end decoder mod 
+} 

@@ -22,7 +22,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let matching_engine = Arc::new(RwLock::new(MatchingEngine::new(config)));
     let latency_metrics = Arc::new(LatencyMetrics::new());
 
-    // Create the integration
     let mut integration = DeribitExchangeIntegration::new(
         Arc::clone(&matching_engine),
         Arc::clone(&latency_metrics)

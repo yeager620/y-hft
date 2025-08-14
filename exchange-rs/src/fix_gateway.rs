@@ -89,11 +89,11 @@ impl FixGateway {
                         }
                     }
                     Ok(None) => {
-                        // No response needed
+                        
                     }
                     Err(e) => {
                         warn!("Error processing FIX message: {}", e);
-                        // Send reject message
+                        
                         let reject = Self::create_reject_message(&e);
                         if let Err(send_err) = stream.write_all(&reject).await {
                             error!("Failed to send reject message: {}", send_err);

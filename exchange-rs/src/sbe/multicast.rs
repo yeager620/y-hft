@@ -43,7 +43,7 @@ pub struct MulticastConfig {
 impl Default for MulticastConfig {
     fn default() -> Self {
         Self {
-            multicast_addr: IpAddr::V4(Ipv4Addr::new(224, 0, 1, 1)), // Example multicast group
+            multicast_addr: IpAddr::V4(Ipv4Addr::new(224, 0, 1, 1)), 
             port: 8080,
             interface_addr: None,
             buffer_size: 65536,
@@ -77,7 +77,7 @@ impl DeribitMulticastReceiver {
 
         self.setup_socket()?;
         
-        let (tx, rx) = mpsc::channel(10000); // Large buffer for high-frequency data
+        let (tx, rx) = mpsc::channel(10000); 
         
         let socket = self.socket.take().unwrap();
         let parser = self.parser.clone();
@@ -95,6 +95,7 @@ impl DeribitMulticastReceiver {
         let socket = Socket::new(Domain::IPV4, Type::DGRAM, Some(Protocol::UDP))?;
         
         socket.set_reuse_address(true)?;
+        #[cfg(any(target_os = "linux", target_os = "android"))]
         socket.set_reuse_port(true)?;
         socket.set_read_timeout(Some(self.config.read_timeout))?;
         socket.set_multicast_loop_v4(self.config.enable_loopback)?;
@@ -205,8 +206,8 @@ impl DeribitMulticastReceiver {
 
     pub fn create_deribit_config() -> MulticastConfig {
         MulticastConfig {
-            multicast_addr: IpAddr::V4(Ipv4Addr::new(239, 1, 2, 3)), // Example address
-            port: 9999, // Example port
+            multicast_addr: IpAddr::V4(Ipv4Addr::new(239, 1, 2, 3)), 
+            port: 9999, 
             interface_addr: None,
             buffer_size: 65536,
             read_timeout: Duration::from_millis(50),

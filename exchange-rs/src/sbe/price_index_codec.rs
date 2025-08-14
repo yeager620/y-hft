@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 
 pub use encoder::*;
 pub use decoder::*;
@@ -63,15 +63,15 @@ pub mod encoder {
             header
         }
 
-        /// primitive array field 'indexName'
-        /// - min value: 32
-        /// - max value: 126
-        /// - null value: 0
-        /// - characterEncoding: US-ASCII
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 16
-        /// - version: 0
+        
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn index_name(&mut self, value: [u8; 16]) {
             let offset = self.offset;
@@ -94,28 +94,28 @@ pub mod encoder {
             buf.put_u8_at(offset + 15, value[15]);
         }
 
-        /// primitive field 'price'
-        /// - min value: 4.9E-324
-        /// - max value: 1.7976931348623157E308
-        /// - null value: NaN
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 16
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn price(&mut self, value: f64) {
             let offset = self.offset + 16;
             self.get_buf_mut().put_f64_at(offset, value);
         }
 
-        /// primitive field 'timestampMs'
-        /// - min value: 0
-        /// - max value: -2
-        /// - null value: -1
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 24
-        /// - encodedLength: 8
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn timestamp_ms(&mut self, value: u64) {
             let offset = self.offset + 24;
@@ -124,7 +124,7 @@ pub mod encoder {
 
     }
 
-} // end encoder
+} 
 
 pub mod decoder {
     use super::*;
@@ -217,13 +217,13 @@ pub mod decoder {
             ]
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn price(&self) -> f64 {
             self.get_buf().get_f64_at(self.offset + 16)
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn timestamp_ms(&self) -> u64 {
             self.get_buf().get_u64_at(self.offset + 24)
@@ -231,5 +231,5 @@ pub mod decoder {
 
     }
 
-} // end decoder
+} 
 

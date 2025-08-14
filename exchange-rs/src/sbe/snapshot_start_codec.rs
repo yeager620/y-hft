@@ -1,4 +1,4 @@
-use crate::*;
+use crate::sbe::*;
 
 pub use encoder::*;
 pub use decoder::*;
@@ -63,14 +63,14 @@ pub mod encoder {
             header
         }
 
-        /// primitive field 'snapshotDelay'
-        /// - min value: 0
-        /// - max value: 4294967294
-        /// - null value: 4294967295
-        /// - characterEncoding: null
-        /// - semanticType: null
-        /// - encodedOffset: 0
-        /// - encodedLength: 4
+        
+        
+        
+        
+        
+        
+        
+        
         #[inline]
         pub fn snapshot_delay(&mut self, value: u32) {
             let offset = self.offset;
@@ -79,7 +79,7 @@ pub mod encoder {
 
     }
 
-} // end encoder
+} 
 
 pub mod decoder {
     use super::*;
@@ -149,7 +149,7 @@ pub mod decoder {
             )
         }
 
-        /// primitive field - 'REQUIRED'
+        
         #[inline]
         pub fn snapshot_delay(&self) -> u32 {
             self.get_buf().get_u32_at(self.offset)
@@ -157,5 +157,5 @@ pub mod decoder {
 
     }
 
-} // end decoder
+} 
 
