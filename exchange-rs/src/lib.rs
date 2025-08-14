@@ -4,3 +4,5 @@ pub mod optimizations;
 pub mod order;
 pub mod orderbook;
 pub mod snapshot;
+pub mod fix;
+pub mod fix_gateway;
